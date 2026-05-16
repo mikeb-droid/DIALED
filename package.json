@@ -1,0 +1,18 @@
+{
+  "name": "dialed",
+  "version": "1.0.0",
+  "description": "FL East Coast Offshore Fishing Chart with real NOAA data",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "fetch": "node api/cron-fetch.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
+  },
+  "engines": { "node": ">=18.0.0" }
+}

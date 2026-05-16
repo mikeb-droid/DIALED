@@ -1,0 +1,14 @@
+{
+  "name": "DIALED — FL Offshore Fishing Chart",
+  "short_name": "DIALED",
+  "description": "Real-time offshore fishing chart for Florida East Coast",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "categories": ["navigation", "sports"]
+}

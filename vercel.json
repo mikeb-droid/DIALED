@@ -1,0 +1,25 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron-fetch",
+      "schedule": "0 7 * * *"
+    }
+  ],
+  "functions": {
+    "api/cron-fetch.js": { "maxDuration": 300 },
+    "api/*.js":          { "maxDuration": 30  }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/public/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=7200" }
+      ]
+    }
+  ]
+}
