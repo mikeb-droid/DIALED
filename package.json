@@ -2,7 +2,6 @@
   "name": "dialed",
   "version": "1.0.0",
   "description": "FL East Coast Offshore Fishing Chart with real NOAA data",
-  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "fetch": "node api/cron-fetch.js"
