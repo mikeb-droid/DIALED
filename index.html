@@ -1,982 +1,847 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="theme-color" content="#0a0a0a"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#1a2332"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="DIALED"/>
-<link rel="manifest" href="/manifest.json"/>
-<title>DIALED — FL Offshore Fishing Chart</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Chem Safety"/>
+<title>Chemical Safety — Pest Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial,sans-serif;overflow:hidden;color:#ddd;user-select:none}
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
-
-/* HEADER */
-#hdr{background:#0a0a0a;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:10px;flex-shrink:0}
-#hdr-logo{color:#e8c840;font-size:15px;font-weight:800;letter-spacing:1px}
-#go-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.5px;transition:all .3s}
-.go-GO{background:#1a3a1a;color:#44ff88;border:1px solid #2a5a2a}
-.go-CAUTION{background:#3a2a00;color:#ffcc00;border:1px solid #5a4a00}
-.go-NO-GO{background:#3a0a0a;color:#ff4444;border:1px solid #5a1a1a}
-.go-loading{background:#1a1a1a;color:#555;border:1px solid #222}
-#hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-#hdr-date{font-size:10px;color:#555;font-family:monospace}
-.hbtn{width:30px;height:30px;border-radius:8px;border:1px solid #222;background:#111;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
-
-/* FORECAST TABS */
-#ftabs{display:flex;background:#080808;border-bottom:1px solid #1a1a1a;flex-shrink:0}
-.ft{flex:1;padding:6px 2px;text-align:center;cursor:pointer;font-size:10px;font-weight:600;color:#444;border-bottom:2px solid transparent;transition:all .15s}
-.ft.on{color:#e8c840;border-bottom-color:#e8c840}
-.ft small{display:block;font-size:8px;color:#333;margin-top:1px}
-.ft.on small{color:#888}
-
-/* MAP */
-#mapwrap{flex:1;position:relative;overflow:hidden;min-height:0;background:#071525;touch-action:none}
-#map{width:100%;height:100%}
-
-/* FLOATING CONTROLS */
-#fab-tl{position:absolute;top:8px;left:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
-#fab-tr{position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
-.fab{width:36px;height:36px;border-radius:10px;border:1px solid #333;background:rgba(8,8,8,.9);color:#bbb;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;backdrop-filter:blur(3px)}
-.fab:active{transform:scale(.95)}
-.fab.on{background:rgba(20,40,10,.9);border-color:#3a5a1a;color:#e8c840}
-#zoom-lbl{text-align:center;font-size:8px;color:#333;font-family:monospace}
-
-/* LAYER PANEL */
-#lyrpanel{position:absolute;top:50px;left:8px;z-index:15;background:rgba(8,8,8,.96);border:1px solid #2a2a2a;border-radius:10px;padding:8px 10px;display:none;min-width:148px}
-#lyrpanel.show{display:block}
-.lrow{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #111;font-size:11px;color:#777;gap:8px}
-.lrow:last-child{border-bottom:none}
-.tog{width:30px;height:15px;border-radius:8px;background:#1a1a1a;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
-.tog.on{background:#c8a020}
-.tog::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:left .2s}
-.tog.on::after{left:17px}
-
-/* SST COLOR BAR */
-#sstbar{position:absolute;bottom:8px;left:8px;z-index:10;background:rgba(0,0,0,.78);border-radius:5px;padding:4px 7px;pointer-events:none}
-#sst-canvas{border-radius:2px;display:block}
-#sst-labels{display:flex;justify-content:space-between;font-size:7px;color:#888;font-family:monospace;margin-top:2px;width:160px}
-
-/* COORDS */
-#coords{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(0,0,0,.72);border-radius:5px;padding:2px 8px;font-size:10px;font-family:monospace;color:#999;pointer-events:none;white-space:nowrap}
-
-/* STATUS TOAST */
-#toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;background:rgba(0,0,0,.88);border:1px solid #333;border-radius:8px;padding:10px 18px;font-size:12px;color:#ccc;display:none;text-align:center}
-#toast.show{display:block}
-
-/* WAYPOINT POPUP */
-#wptpop{position:absolute;left:8px;right:8px;bottom:8px;z-index:20;display:none}
-.wptinner{background:#0d0d0d;border:2px solid #e8c840;border-radius:12px;padding:11px 13px;position:relative}
-.wpth{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.wptltr{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0}
-.wpttitle{flex:1}
-.wptsp{font-size:11px;font-weight:700;color:#ddd}
-.wptco{font-size:9px;color:#555;font-family:monospace;margin-top:1px}
-.wptpct{font-size:20px;font-weight:700}
-.wr{display:flex;align-items:center;gap:6px;font-size:11px;color:#777;margin-bottom:3px}
-.wbdg{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:auto}
-.bi{background:#1a3a1a;color:#44ff88}.bg2{background:#2a2a0a;color:#aacc44}
-.bo{background:#2a1a0a;color:#cc8844}.bp{background:#2a0a0a;color:#cc4444}
-.wclose{position:absolute;top:-8px;right:8px;width:26px;height:26px;border-radius:50%;background:#333;border:none;color:#fff;font-size:12px;cursor:pointer}
-
-/* BOTTOM SHEET */
-#bs{position:absolute;left:0;right:0;bottom:0;z-index:15;background:#0d0d0d;border-top:1px solid #1a1a1a;border-radius:14px 14px 0 0;transition:transform .28s cubic-bezier(.32,.72,0,1);padding-bottom:max(6px,env(safe-area-inset-bottom))}
-#bs.shut{transform:translateY(calc(100% - 46px))}
-@media(max-width:640px){
-  #bs-cont{max-height:55vh}
-  #spgrid{grid-template-columns:repeat(3,1fr);gap:6px}
-  .spbtn{padding:8px 4px}
-  .spico{font-size:22px}
-  .spnm{font-size:9px}
-  #fab-tr{gap:6px}
-  .fab{width:40px;height:40px;font-size:16px}
-  #sstbar{display:none} /* hide on small screens, show in sheet instead */
-  #coords{font-size:9px;padding:2px 6px}
-  .scard{padding:10px 12px;margin-bottom:8px}
-  .scnm{font-size:12px}
-  .scco{font-size:10px}
-  .scpct{font-size:19px}
-  .buoy-val{font-size:14px}
-  #go-title{font-size:20px}
+:root {
+  --bg: #f4f2ed;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #ddd9d0;
+  --border2: #c8c4bb;
+  --text: #1a1a18;
+  --text2: #5a5850;
+  --text3: #8a8880;
+  --accent: #1a2332;
+  --accent-light: #e8ecf2;
+  --accent-text: #0e1620;
+  --danger: #8b1a1a;
+  --danger-bg: #fdf0f0;
+  --danger-border: #e8b4b4;
+  --warning: #7a4a00;
+  --warning-bg: #fdf6e8;
+  --warning-border: #e8d4a0;
+  --caution: #4a5a20;
+  --caution-bg: #f4f8ec;
+  --caution-border: #c4d890;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 6px;
+  --radius-lg: 10px;
 }
-#bs-hdl{padding:8px 12px 0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
-#bs-bar{width:34px;height:4px;background:#2a2a2a;border-radius:2px}
-#bs-tabs{display:flex;gap:5px;padding:4px 8px 5px}
-.bst{flex:1;padding:5px 3px;border-radius:7px;border:1px solid #1a1a1a;background:#111;color:#444;cursor:pointer;font-size:10px;font-weight:600;text-align:center;transition:all .15s}
-.bst.on{background:#1a2a0a;color:#e8c840;border-color:#3a5a0a}
-#bs-cont{overflow-y:auto;padding:0 8px 8px;max-height:50vh}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
 
-/* CONDITIONS PANEL */
-#condpanel{display:none}
-#gobox{border-radius:10px;padding:12px 14px;margin-bottom:10px;text-align:center}
-#go-title{font-size:18px;font-weight:800;letter-spacing:1px;margin-bottom:4px}
-#go-sub{font-size:10px;opacity:.8;margin-bottom:8px}
-#go-issues{font-size:10px;line-height:1.7;opacity:.85}
-.gobox-GO{background:#0a1f0a;border:1px solid #2a5a2a}
-.gobox-CAUTION{background:#1f1500;border:1px solid #5a4a00}
-.gobox-NO-GO{background:#1f0505;border:1px solid #5a1a1a}
-#buoys-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
-.buoy-card{background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:8px 10px}
-.buoy-name{font-size:11px;font-weight:700;color:#ccc;margin-bottom:4px}
-.buoy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.buoy-stat{text-align:center}
-.buoy-val{font-size:13px;font-weight:700;color:#ddd}
-.buoy-lbl{font-size:8px;color:#555;text-transform:uppercase;letter-spacing:.3px}
-.buoy-time{font-size:9px;color:#444;margin-top:3px;text-align:right}
-#forecast-list{display:flex;flex-direction:column;gap:6px}
-.fcast-card{background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:8px 10px}
-.fcast-zone{font-size:10px;font-weight:700;color:#888;margin-bottom:4px}
-.fcast-period{font-size:10px;color:#777;line-height:1.5;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid #111}
-.fcast-period:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.fcast-name{font-weight:700;color:#ccc;margin-right:6px}
+/* Header */
+.app-header {
+  background: var(--accent);
+  color: #fff;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-header h1 {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.header-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--mono);
+}
+.emergency-pill {
+  background: #8b1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.emergency-pill:hover { background: #a02020; }
 
-/* SPECIES GRID */
-#sppanel{display:none}
-#spgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:2px 0 6px}
-.spbtn{padding:7px 3px;border-radius:8px;border:1px solid #1e1e1e;background:#111;cursor:pointer;text-align:center;transition:all .15s}
-.spbtn:active{transform:scale(.97)}
-.spbtn.on{border-color:var(--fc);background:var(--fca)}
-.spico{font-size:20px;display:block;margin-bottom:2px}
-.spnm{font-size:9px;font-weight:600;color:#555;line-height:1.2}
-.spbtn.on .spnm{color:#fff}
-#sptip{font-size:10px;color:#444;padding:2px 0 6px;line-height:1.5}
+/* Emergency bar */
+.emergency-bar {
+  background: var(--danger-bg);
+  border-bottom: 1px solid var(--danger-border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.emergency-bar .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.emergency-bar .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.emerg-link {
+  font-size: 12px;
+  color: var(--danger);
+  text-decoration: none;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius);
+  padding: 3px 10px;
+  background: #fff;
+  font-weight: 500;
+}
+.emerg-link:hover { background: var(--danger-bg); }
 
-/* SPOTS */
-#spotpanel{display:none}
-.scard{background:#111;border:1px solid #1e1e1e;border-radius:9px;padding:9px 11px;margin-bottom:6px;cursor:pointer}
-.scard:active{transform:scale(.99)}
-.sctop{display:flex;align-items:center;gap:7px;margin-bottom:5px}
-.scltr{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#000;flex-shrink:0}
-.scnm{font-size:11px;font-weight:700;color:#ddd}
-.scco{font-size:9px;color:#444;font-family:monospace;margin-top:1px}
-.scpct{font-size:17px;font-weight:700;margin-left:auto}
-.sreas{display:flex;flex-direction:column;gap:3px}
-.srea{display:flex;align-items:center;gap:5px;font-size:10px;color:#666}
-.srlt{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:auto}
+/* Main layout */
+.main { max-width: 800px; margin: 0 auto; padding: 16px; }
 
-/* LUNAR */
-#lunarpanel{display:none;gap:8px;flex-wrap:wrap;padding:4px 0}
-.lbox{flex:1;min-width:120px;background:#111;border:1px solid #1e1e1e;border-radius:9px;padding:9px 10px}
-.ltit{font-size:9px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-.lbig{font-size:22px;margin-bottom:2px}
-.lval{font-size:12px;font-weight:700;color:#ccc}
-.lsub{font-size:9px;color:#444;margin-top:1px}
-.lbar{height:4px;background:#111;border-radius:2px;margin-top:5px}
-.lfill{height:4px;border-radius:2px}
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: var(--surface2);
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--sans);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text2);
+  font-weight: 400;
+  transition: background 0.15s;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+}
+.tab-btn:hover:not(.active) { background: var(--border); }
+
+/* Search */
+.search-wrap { position: relative; margin-bottom: 14px; }
+.search-wrap input {
+  width: 100%;
+  padding: 11px 40px 11px 14px;
+  font-size: 15px;
+  font-family: var(--sans);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+  font-size: 16px;
+}
+
+/* Status bar */
+.status-bar {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--caution);
+  display: inline-block;
+}
+.status-dot.ok { background: #3a7a30; }
+.status-dot.err { background: var(--danger); }
+
+/* Result items */
+.result-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.result-item:hover { border-color: var(--border2); background: var(--surface2); }
+.result-name { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+.result-meta { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+.result-arrow { color: var(--text3); font-size: 18px; flex-shrink: 0; }
+
+/* Signal badges */
+.sig-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sig-DANGER { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.sig-WARNING { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+.sig-CAUTION { background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution-border); }
+
+/* Back button */
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sans);
+}
+.back-btn:hover { color: var(--text); }
+
+/* Detail card */
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.detail-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.detail-ai { font-size: 13px; color: var(--text2); margin-bottom: 10px; font-family: var(--mono); }
+.detail-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta-pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.rup-pill {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+/* Emergency first aid block */
+.fa-block {
+  background: var(--danger-bg);
+  border-bottom: 1px solid var(--danger-border);
+  padding: 14px 16px;
+}
+.block-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.fa-block .block-label { color: var(--danger); }
+.fa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.fa-item {
+  background: #fff;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.fa-type {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--danger);
+  margin-bottom: 5px;
+}
+.fa-item p { font-size: 12px; color: #3a0a0a; line-height: 1.55; }
+
+/* Info sections */
+.detail-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.detail-section:last-child { border-bottom: none; }
+.detail-section .block-label { color: var(--text3); margin-bottom: 8px; }
+.ppe-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.ppe-pill {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border: 1px solid #c0ccd8;
+}
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+}
+.comp-box {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  text-align: center;
+}
+.comp-val { font-size: 14px; font-weight: 500; font-family: var(--mono); margin-bottom: 2px; }
+.comp-lbl { font-size: 11px; color: var(--text3); }
+.info-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+/* SDS links */
+.sds-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.sds-link {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  color: #185FA5;
+  text-decoration: none;
+  background: var(--surface);
+  font-family: var(--mono);
+}
+.sds-link:hover { background: var(--accent-light); }
+
+/* Empty / loading */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text2);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.empty-state strong { color: var(--danger); }
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* Manage tab */
+.manage-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.manage-card h2 {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.notice {
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+}
+.form-grid { display: grid; gap: 10px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 11px; color: var(--text2); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.form-grid input, .form-grid select, .form-grid textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: var(--sans);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { border-color: var(--accent); }
+.form-grid textarea { height: 60px; resize: none; }
+.save-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  margin-top: 4px;
+}
+.save-btn:hover { background: var(--accent-text); }
+
+/* Inventory table */
+.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inv-table th {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+.inv-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.inv-table tr:last-child td { border-bottom: none; }
+.del-btn {
+  font-size: 11px;
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+  background: none;
+  border-radius: var(--radius);
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+.del-btn:hover { background: var(--danger-bg); }
+
+/* Offline banner */
+.offline-banner {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--warning);
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .row2, .row3 { grid-template-columns: 1fr; }
+  .fa-grid { grid-template-columns: 1fr 1fr; }
+  .comp-grid { grid-template-columns: repeat(3, 1fr); }
+  .app-header h1 { font-size: 13px; }
+  .emergency-pill { font-size: 11px; padding: 5px 10px; }
+}
 </style>
 </head>
 <body>
-<div id="app">
 
-<!-- Header -->
-<div id="hdr">
-  <div id="hdr-logo">DIALED</div>
-  <div id="go-badge" class="go-loading">LOADING...</div>
-  <div id="hdr-right">
-    <input type="date" id="datein" style="font-size:10px;padding:2px 4px;border:1px solid #333;border-radius:5px;background:#111;color:#ccc"/>
-    <button class="hbtn" onclick="applyDate()" title="Update">↻</button>
-    <button class="hbtn" onclick="doGPS()" title="My location" id="gps-btn">◎</button>
+<header class="app-header">
+  <div>
+    <div class="h1">Chemical Safety</div>
+    <div class="header-sub">Pest Control Reference</div>
+  </div>
+  <a class="emergency-pill" href="tel:18002221222">&#9888; Poison Control</a>
+</header>
+
+<div class="emergency-bar">
+  <span class="label">Emergency</span>
+  <div class="links">
+    <a class="emerg-link" href="tel:18002221222">1-800-222-1222 — Poison Control</a>
+    <a class="emerg-link" href="tel:911">911</a>
+    <a class="emerg-link" href="https://npic.orst.edu" target="_blank">NPIC online</a>
   </div>
 </div>
 
-<!-- Forecast tabs -->
-<div id="ftabs">
-  <div class="ft on" id="ft-0" onclick="setDay(0)">TODAY<small id="fd-0"></small></div>
-  <div class="ft"    id="ft-1" onclick="setDay(1)">+1<small id="fd-1"></small></div>
-  <div class="ft"    id="ft-2" onclick="setDay(2)">+2<small id="fd-2"></small></div>
-  <div class="ft"    id="ft-3" onclick="setDay(3)">+3<small id="fd-3"></small></div>
-  <div class="ft"    id="ft-4" onclick="setDay(4)">+4<small id="fd-4"></small></div>
-</div>
+<div class="main">
+  <div id="offline-banner" class="offline-banner">Offline — showing cached data</div>
 
-<!-- Map -->
-<div id="mapwrap">
-  <div id="map"></div>
-
-  <!-- Layer FAB -->
-  <div id="fab-tl">
-    <button class="fab on" onclick="toggleLyr(event)">⚙</button>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('search')">Search chemicals</button>
+    <button class="tab-btn" onclick="switchTab('manage')">Manage inventory</button>
   </div>
 
-  <!-- Layer panel -->
-  <div id="lyrpanel">
-    <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
-    <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
-    <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
-    <div class="lrow"><span>Depth Lines</span><button class="tog on" id="t-bat" onclick="tog('bat')"></button></div>
-    <div class="lrow"><span>Fish Zones</span><button class="tog on" id="t-hot" onclick="tog('hot')"></button></div>
-    <div class="lrow"><span>Buoy Markers</span><button class="tog on" id="t-buoys" onclick="tog('buoys')"></button></div>
-    <div class="lrow"><span>Lat/Lon Grid</span><button class="tog on" id="t-grid" onclick="tog('grid')"></button></div>
+  <!-- SEARCH TAB -->
+  <div id="tab-search">
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Product name, active ingredient, or EPA reg. no." oninput="doSearch()" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <span class="search-icon">&#128269;</span>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Loading chemical data...</span>
+    </div>
+    <div id="results-area">
+      <div class="loading">Fetching inventory from Google Sheets...</div>
+    </div>
+    <div id="detail-area" style="display:none"></div>
   </div>
 
-  <!-- Zoom -->
-  <div id="fab-tr">
-    <button class="fab" onclick="zoomIn()">+</button>
-    <button class="fab" onclick="zoomOut()">−</button>
-    <button class="fab" style="font-size:11px" onclick="zoomReset()">⌂</button>
-    <div id="zoom-lbl">z7</div>
-  </div>
-
-  <!-- SST color bar -->
-  <div id="sstbar">
-    <canvas id="sst-canvas" width="160" height="10"></canvas>
-    <div id="sst-labels"></div>
-  </div>
-
-  <!-- Coordinates -->
-  <div id="coords">Tap map for conditions</div>
-
-  <!-- Status toast -->
-  <div id="toast"></div>
-
-  <!-- Waypoint popup -->
-  <div id="wptpop">
-    <div class="wptinner" id="wptinner">
-      <button class="wclose" onclick="closeWpt()">✕</button>
-      <div class="wpth">
-        <div class="wptltr" id="wptltr"></div>
-        <div class="wpttitle">
-          <div class="wptsp" id="wptsp"></div>
-          <div class="wptco" id="wptco"></div>
+  <!-- MANAGE TAB -->
+  <div id="tab-manage" style="display:none">
+    <div class="manage-card">
+      <h2>Add product</h2>
+      <div class="notice">Fields marked * appear prominently in emergency and inspection views.</div>
+      <div class="form-grid">
+        <div class="row2">
+          <div class="form-field"><label class="form-label">Product name *</label><input type="text" id="f-name" placeholder="e.g. Talstar P"/></div>
+          <div class="form-field"><label class="form-label">Active ingredient(s) *</label><input type="text" id="f-ai" placeholder="e.g. Bifenthrin 7.9%"/></div>
         </div>
-        <div class="wptpct" id="wptpct"></div>
+        <div class="row3">
+          <div class="form-field"><label class="form-label">EPA Reg. No. *</label><input type="text" id="f-epa" placeholder="e.g. 279-3206"/></div>
+          <div class="form-field"><label class="form-label">Signal word</label>
+            <select id="f-signal"><option value="DANGER">DANGER</option><option value="WARNING" selected>WARNING</option><option value="CAUTION">CAUTION</option></select>
+          </div>
+          <div class="form-field"><label class="form-label">Tox. category</label>
+            <select id="f-tox"><option value="I">I — Danger</option><option value="II" selected>II — Warning</option><option value="III">III — Caution</option><option value="IV">IV — Caution</option></select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="form-field"><label class="form-label">Target pests</label><input type="text" id="f-pests" placeholder="Ants, cockroaches, termites"/></div>
+          <div class="form-field"><label class="form-label">PPE required *</label><input type="text" id="f-ppe" placeholder="Gloves, goggles, respirator"/></div>
+        </div>
+        <div class="row3">
+          <div class="form-field"><label class="form-label">First aid — skin *</label><textarea id="f-fa-skin" placeholder="Wash with soap and water 15-20 min."></textarea></div>
+          <div class="form-field"><label class="form-label">First aid — eyes *</label><textarea id="f-fa-eye" placeholder="Flush with water 15-20 min."></textarea></div>
+          <div class="form-field"><label class="form-label">First aid — inhaled *</label><textarea id="f-fa-inhale" placeholder="Move to fresh air. Call 911 if needed."></textarea></div>
+        </div>
+        <div class="row2">
+          <div class="form-field"><label class="form-label">Storage</label><textarea id="f-storage" placeholder="Store in original container, locked storage..."></textarea></div>
+          <div>
+            <div class="form-field" style="margin-bottom:8px"><label class="form-label">Re-entry interval (REI)</label><input type="text" id="f-rei" placeholder="e.g. 4 hours"/></div>
+            <div class="form-field"><label class="form-label">Restricted use?</label>
+              <select id="f-ru"><option value="No">No — General use</option><option value="Yes">Yes — Restricted (RUP)</option></select>
+            </div>
+          </div>
+        </div>
+        <div><button class="save-btn" onclick="saveProduct()">Save to inventory</button></div>
       </div>
-      <hr style="border:none;border-top:1px solid #1a1a1a;margin:6px 0"/>
-      <div id="wptreas"></div>
+    </div>
+    <div class="manage-card">
+      <h2>Current inventory</h2>
+      <div id="manage-list"></div>
     </div>
   </div>
 </div>
-
-<!-- Bottom sheet -->
-<div id="bs" class="shut">
-  <div id="bs-hdl" onclick="toggleSheet()">
-    <div id="bs-bar"></div>
-    <div id="bs-tabs">
-      <div class="bst on"  id="bst-cond"   onclick="showTab('cond',event)">📡 Conditions</div>
-      <div class="bst"     id="bst-sp"     onclick="showTab('sp',event)">🎯 Species</div>
-      <div class="bst"     id="bst-spots"  onclick="showTab('spots',event)">📍 Spots</div>
-      <div class="bst"     id="bst-lunar"  onclick="showTab('lunar',event)">🌙 Lunar</div>
-    </div>
-  </div>
-  <div id="bs-cont">
-    <!-- Conditions -->
-    <div id="condpanel">
-      <div id="gobox" class="gobox-loading">
-        <div id="go-title">—</div>
-        <div id="go-sub">Loading conditions...</div>
-        <div id="go-issues"></div>
-      </div>
-      <div id="buoys-list"></div>
-      <div id="forecast-list"></div>
-    </div>
-    <!-- Species -->
-    <div id="sppanel">
-      <div id="spgrid"></div>
-      <div id="sptip"></div>
-    </div>
-    <!-- Spots -->
-    <div id="spotpanel">
-      <div id="spotlist"><div style="color:#444;font-size:11px;padding:10px 0">Select a species to find top spots</div></div>
-    </div>
-    <!-- Lunar -->
-    <div id="lunarpanel">
-      <div id="lunarinner" style="width:100%;color:#444;font-size:11px">Loading...</div>
-    </div>
-  </div>
-</div>
-
-</div><!-- #app -->
 
 <script>
-'use strict';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQRqu7KSe1dYmlcQ3I9Fwiv50sxkgoXfMxXMkREX27iLUZv_f7Xldh2_4ayRwEqmeI_i26X-z7uXT3Y/pub?gid=0&single=true&output=csv';
+const CACHE_KEY = 'pestchem_cache';
+const LOCAL_KEY = 'pestchem_local';
 
-// ── PWA Service Worker + Install Prompt ──────────────────────────────
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').catch(()=>{});
-}
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault(); deferredPrompt=e;
-  setTimeout(()=>{ if(deferredPrompt) showToast('Tip: Add DIALED to your home screen!',4000); },3000);
-});
+let sheetProducts = [];
+let localProducts = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+let activeTab = 'search';
 
-// ═══════════════════════════════════════════════════════════
-// DIALED — Front End
-// Fetches real data from /api/* and renders on Leaflet map
-// ═══════════════════════════════════════════════════════════
+function allProducts() { return [...sheetProducts, ...localProducts]; }
 
-// ── Load Leaflet dynamically (CDN, cached by service worker) ──────────
-(function loadLeaflet(cb){
-  if(window.L){ cb(); return; }
-  const link=document.createElement('link');
-  link.rel='stylesheet';link.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(link);
-  const s=document.createElement('script');
-  s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-  s.onload=cb; document.head.appendChild(s);
-})(initApp);
-
-// ── Constants ─────────────────────────────────────────────────────────
-const SST_STOPS=[
-  [68,[100,0,180]],[70,[60,40,255]],[72,[0,100,255]],[74,[0,190,220]],
-  [75,[0,210,130]],[76,[30,210,30]],[77,[130,210,0]],[78,[210,200,0]],
-  [79,[255,160,0]],[80,[255,100,0]],[81,[240,40,0]],[82,[200,0,20]],[84,[150,0,50]]
-];
-function sstRGB(t){
-  if(t<=SST_STOPS[0][0])return SST_STOPS[0][1];
-  if(t>=SST_STOPS[SST_STOPS.length-1][0])return SST_STOPS[SST_STOPS.length-1][1];
-  for(let i=0;i<SST_STOPS.length-1;i++){
-    const[t0,c0]=SST_STOPS[i],[t1,c1]=SST_STOPS[i+1];
-    if(t>=t0&&t<=t1){const r=(t-t0)/(t1-t0);return[Math.round(c0[0]+(c1[0]-c0[0])*r),Math.round(c0[1]+(c1[1]-c0[1])*r),Math.round(c0[2]+(c1[2]-c0[2])*r)];}
-  }
-  return[128,128,128];
-}
-function sstHex(t){const[r,g,b]=sstRGB(t);return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
-
-const pad=n=>String(n).padStart(2,'0');
-const now=new Date();
-const TODAY=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-document.getElementById('datein').value=TODAY;
-document.getElementById('datein').max=TODAY;
-
-function toDDM(deg,isLat){
-  const dir=isLat?(deg>=0?'N':'S'):(deg<=0?'W':'E');
-  const d=Math.floor(Math.abs(deg));
-  const m=((Math.abs(deg)-d)*60).toFixed(3);
-  return `${d}° ${m}' ${dir}`;
-}
-function coordStr(lat,lon){return toDDM(lat,true)+'   '+toDDM(lon,false);}
-
-function ratingLabel(v){
-  if(v>0.8)return{txt:'IDEAL',cls:'bi'};
-  if(v>0.55)return{txt:'GOOD',cls:'bg2'};
-  if(v>0.3)return{txt:'OK',cls:'bo'};
-  return{txt:'POOR',cls:'bp'};
-}
-
-// ── State ─────────────────────────────────────────────────────────────
-let map=null, overlayLayers={}, waypointMarkers=[], buoyMarkers=[];
-let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1};
-let AF=null, currentWaypoints=[], clickedWpt=null;
-let forecastDay=0;
-let oceanData=null, conditionsData=null;
-let sheetOpen=false, activeTab='cond';
-
-// ── DDM coordinate helpers ────────────────────────────────────────────
-
-// ── Named features ────────────────────────────────────────────────────
-const FEATURES=[
-  {name:'Palm Beach Canyon',lat:26.72,lon:-79.30},
-  {name:'Cape Canaveral Edge',lat:28.55,lon:-79.55},
-  {name:'Ft Pierce Inlet Edge',lat:27.46,lon:-79.45},
-  {name:'Miami Blue Water',lat:25.70,lon:-79.35},
-  {name:'Jupiter Ledge',lat:27.05,lon:-79.55},
-  {name:'Flagler Beach Ledge',lat:29.50,lon:-80.60},
-  {name:'Jacksonville 60mi',lat:30.40,lon:-79.90},
-  {name:'Gulf Stream Core',lat:27.80,lon:-79.10},
-];
-function nearFeat(lon,lat){
-  let best=null,bd=99;
-  FEATURES.forEach(f=>{const d=Math.hypot(f.lon-lon,f.lat-lat);if(d<bd&&d<1.0){bd=d;best=f;}});
-  return best;
-}
-
-// ── Bathymetry ─────────────────────────────────────────────────────────
-// Depth contours removed per user preference
-
-// ── MAIN INIT ─────────────────────────────────────────────────────────
-function initApp(){
-  // Initialize Leaflet map
-  map = L.map('map', {
-    center: [27.5, -79.7],
-    zoom: 7,
-    zoomControl: false,
-    attributionControl: true,
-  });
-
-  // Esri satellite base layer (free, no API key)
-  L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Esri World Imagery', maxZoom: 12 }
-  ).addTo(map);
-
-  // Listen for map interactions
-  map.on('click', onMapClick);
-  map.on('mousemove', onMapMouseMove);
-  map.on('zoom', onZoom);
-
-  // Build static overlays
-  buildSSTBar();
-  buildBtns();
-  showTab('cond', null);
-  initForecastTabs();
-
-  // Fetch data
-  loadOceanData();
-  loadConditions();
-  loadLunarTides();
-
-  // Refresh conditions every 30 minutes
-  setInterval(loadConditions, 30 * 60 * 1000);
-}
-
-// ── DATA LOADING ──────────────────────────────────────────────────────
-function showToast(msg, ms=2500){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), ms);
-}
-
-async function loadOceanData(date=null){
-  showToast('Loading satellite data...');
-  try {
-    const url = date ? `/api/ocean?date=${date}&include=isotherms,breaks,chl` : '/api/ocean?include=isotherms,breaks,chl';
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error(`Ocean data ${resp.status}`);
-    oceanData = await resp.json();
-    showToast(`SST data: ${oceanData.sstDate || oceanData.date}`);
-    renderOceanLayers();
-    if(AF) loadWaypoints(AF.id);
-  } catch(e){
-    console.error('Ocean load failed:', e);
-    showToast('Using model data (satellite unavailable)', 4000);
-    // App still works — just without real satellite data
-  }
-}
-
-async function loadConditions(){
-  const el=document.getElementById('go-badge');
-  el.textContent='CHECKING...';
-  el.className='go-badge go-loading';
-  try {
-    const resp = await fetch('/api/conditions?boat=medium');
-    if(!resp.ok) throw new Error(resp.status);
-    conditionsData = await resp.json();
-    renderConditions(conditionsData);
-  } catch(e){
-    console.error('Conditions load failed:', e);
-    el.textContent='OFFLINE';
-    el.className='go-badge go-loading';
-  }
-}
-
-async function loadWaypoints(fishId){
-  if(!fishId) return;
-  const date = forecastDay > 0 ? getForecastDate(forecastDay) : null;
-  const url = date ? `/api/waypoints?fish=${fishId}&date=${date}` : `/api/waypoints?fish=${fishId}`;
-  try {
-    showToast(`Finding ${fishId} spots...`);
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error(resp.status);
-    const data = await resp.json();
-    currentWaypoints = data.waypoints || [];
-    buildSpotCards();
-    renderWaypoints();
-    showToast(`${currentWaypoints.length} spots found`);
-  } catch(e){
-    console.error('Waypoints failed:', e);
-    showToast('Could not load waypoints', 3000);
-  }
-}
-
-function loadLunarTides(){
-  const lp = lunarPhase(new Date());
-  renderLunarPanel(lp);
-}
-
-// ── OCEAN LAYER RENDERING ─────────────────────────────────────────────
-function renderOceanLayers(){
-  if(!oceanData) return;
-  clearOverlays();
-
-  if(LY.iso && oceanData.isotherms) renderIsotherms(oceanData.isotherms);
-  if(LY.brk && oceanData.tempBreaks) renderTempBreaks(oceanData.tempBreaks);
-  if(LY.chl && oceanData.chlGrid) renderChlStipple(oceanData.chlGrid);
-  if(LY.hot && AF) renderFishZone(AF, oceanData);
-}
-
-function clearOverlays(){
-  Object.values(overlayLayers).forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
-  overlayLayers={};
-}
-
-function renderIsotherms(isotherms){
-  const group=L.layerGroup();
-  const placed={}; // track label positions per temperature
-  isotherms.forEach(({T,major,segs,labels})=>{
-    if(!segs||segs.length<4) return;
-    const [r,g,b]=sstRGB(T);
-    const color=`rgb(${r},${g},${b})`;
-    // Thinner lines - minor every 1F, major every 2F
-    for(let i=0;i<segs.length;i+=4){
-      const latlngs=[[segs[i+1],segs[i]],[segs[i+3],segs[i+2]]];
-      L.polyline(latlngs,{
-        color, weight:major?1.2:0.5,
-        opacity:major?0.85:0.35
-      }).addTo(group);
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+  const find = (h, alts) => {
+    const keys = [h, ...(alts||[])];
+    for (const k of keys) {
+      const i = headers.findIndex(x => x === k || x.includes(k));
+      if (i >= 0) return i;
     }
-    // Temperature labels on major lines only
-    if(major && labels && labels.length>0){
-      placed[T]=[];
-      for(let i=0;i<labels.length;i+=2){
-        const lat=labels[i+1], lon=labels[i];
-        // Skip if too close to another label for same temp
-        if(placed[T].some(p=>Math.hypot(p[0]-lat,p[1]-lon)<1.5)) continue;
-        placed[T].push([lat,lon]);
-        const icon=L.divIcon({
-          className:'',
-          html:`<div style="background:rgba(0,0,0,0.75);color:rgb(${r},${g},${b});
-                font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;
-                border:1px solid rgba(${r},${g},${b},0.6);white-space:nowrap;
-                font-family:monospace">${T}F</div>`,
-          iconSize:[32,14], iconAnchor:[16,7]
-        });
-        L.marker([lat,lon],{icon,interactive:false}).addTo(group);
-      }
-    }
-  });
-  group.addTo(map);
-  overlayLayers.isotherms=group;
-}
-
-function renderTempBreaks(breaks){
-  if(!breaks||!breaks.length) return;
-  // Render as a canvas overlay for performance
-  const canvas=L.canvas({padding:0.1});
-  const group=L.layerGroup();
-  // Sample — render as circle markers for the strongest breaks
-  const strong=breaks.filter(b=>b.intensity>0.5).slice(0,500);
-  strong.forEach(b=>{
-    L.circleMarker([b.lat,b.lon],{
-      radius:2, color:'#ffff44', fillColor:'#ffee00',
-      fillOpacity:0.6+b.intensity*0.3, weight:0, renderer:canvas,
-    }).addTo(group);
-  });
-  group.addTo(map);
-  overlayLayers.breaks=group;
-}
-
-function renderChlStipple(chlGrid){
-  if(!chlGrid) return;
-  const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  const canvas=L.canvas({padding:0.1});
-  const group=L.layerGroup();
-  // Use larger step for performance but vary dot size by concentration
-  const step=3;
-  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
-    const chl=chlGrid[iy*NX+ix];
-    if(!chl||chl<0.20) continue;
-    const lat=GA1-iy/NY*(GA1-GA0);
-    const lon=GL0+ix/NX*(GL1-GL0);
-    // Classify into 4 levels
-    let radius, opacity, color;
-    if(chl>=2.0){
-      radius=3.5; opacity=0.75; color='#00ff44'; // High - bright green
-    } else if(chl>=1.0){
-      radius=2.5; opacity=0.60; color='#44dd33'; // Medium-high
-    } else if(chl>=0.5){
-      radius=1.8; opacity=0.45; color='#88cc22'; // Medium
-      if(Math.random()>0.6) continue; // thin out
-    } else {
-      radius=1.2; opacity=0.30; color='#aabb44'; // Low
-      if(Math.random()>0.35) continue; // thin out more
-    }
-    L.circleMarker([lat,lon],{
-      radius, color:'transparent',
-      fillColor:color, fillOpacity:opacity,
-      weight:0, renderer:canvas,
-    }).addTo(group);
-  }
-  group.addTo(map);
-  overlayLayers.chl=group;
-}
-
-function renderFishZone(fish, data){
-  if(!data?.sstGrid||!data?.chlGrid||!data?.depthGrid) return;
-  const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  const canvas=L.canvas({padding:0.1});
-  const [fR,fG,fB]=[parseInt(fish.c.slice(1,3),16),parseInt(fish.c.slice(3,5),16),parseInt(fish.c.slice(5,7),16)];
-  const group=L.layerGroup();
-  const step=3;
-  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
-    const dep=data.depthGrid[iy*NX+ix]; if(dep<=0) continue;
-    const sst=data.sstGrid[iy*NX+ix];
-    const chl=data.chlGrid[iy*NX+ix];
-    if(!sst) continue;
-    const sc=quickScore(fish,sst,chl,dep);
-    if(sc<0.20) continue;
-    const lat=GA1-iy/NY*(GA1-GA0);
-    const lon=GL0+ix/NX*(GL1-GL0);
-    const alpha=Math.min(0.65,((sc-0.20)/0.80)*0.65);
-    L.circleMarker([lat,lon],{
-      radius:4, color:'transparent',
-      fillColor:`rgb(${fR},${fG},${fB})`,
-      fillOpacity:alpha, weight:0, renderer:canvas,
-    }).addTo(group);
-  }
-  group.addTo(map);
-  overlayLayers.fishzone=group;
-}
-
-function quickScore(fish,sst,chl,dep){
-  let ss=0,cs=0,ds=0;
-  if(sst>=fish.sst[0]&&sst<=fish.sst[1]){const m=(fish.sst[0]+fish.sst[1])/2,r=(fish.sst[1]-fish.sst[0])/2;ss=1-Math.abs(sst-m)/r;}
-  const cm=(fish.chl[0]+fish.chl[1])/2,cr=(fish.chl[1]-fish.chl[0])/2;
-  if(cr>0)cs=Math.max(0,1-Math.abs(chl-cm)/cr);
-  if(dep>=fish.dep[0]&&dep<=fish.dep[1]){const dm=(fish.dep[0]+fish.dep[1])/2,dr=(fish.dep[1]-fish.dep[0])/2;ds=dr>0?Math.max(0,1-Math.abs(dep-dm)/dr):1;}
-  const w=fish.w||{sst:.33,chl:.22,dep:.33};
-  return ss*w.sst+cs*w.chl+ds*w.dep;
-}
-
-
-function renderWaypoints(){
-  waypointMarkers.forEach(m=>map.removeLayer(m));
-  waypointMarkers=[];
-  if(!AF||!currentWaypoints.length) return;
-  currentWaypoints.forEach(w=>{
-    const pct=Math.round(w.score.total*100);
-    const icon=L.divIcon({
-      className:'',
-      html:`<div style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.92);
-             border:2.5px solid ${AF.c};display:flex;flex-direction:column;align-items:center;
-             justify-content:center;box-shadow:0 0 12px ${AF.c}88;cursor:pointer">
-             <div style="font-size:16px;font-weight:800;color:${AF.c};line-height:1">${w.letter}</div>
-             <div style="font-size:9px;color:rgba(255,255,255,.85);line-height:1.2">${pct}%</div>
-           </div>`,
-      iconSize:[44,44], iconAnchor:[22,22],
-    });
-    const marker=L.marker([w.lat,w.lon],{icon}).addTo(map);
-    marker.on('click',()=>{
-      clickedWpt=(clickedWpt&&clickedWpt.letter===w.letter)?null:w;
-      if(clickedWpt){
-        showWpt(clickedWpt);
-        // Highlight the card in spots tab
-        showTab('spots',null);
-        setTimeout(()=>{
-          const card=document.getElementById('sc-'+w.letter);
-          if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
-        },300);
-      } else closeWpt();
-    });
-    waypointMarkers.push(marker);
-  });
-}
-
-function renderBuoyMarkers(buoys){
-  buoyMarkers.forEach(m=>map.removeLayer(m));
-  buoyMarkers=[];
-  if(!LY.buoys||!buoys) return;
-  buoys.forEach(b=>{
-    if(!b.lat||!b.lon) return;
-    const windStr=b.wind?.speed ? `${b.wind.speed}kt ${b.wind.dirLabel||''}` : 'No wind data';
-    const waveStr=b.waves?.height ? `${b.waves.height}ft` : '';
-    const icon=L.divIcon({
-      className:'',
-      html:`<div style="background:rgba(0,0,0,.85);border:1px solid #555;border-radius:5px;
-             padding:2px 5px;font-size:9px;color:#ddd;white-space:nowrap;cursor:pointer">
-             🌊 ${b.name.split(' ')[0]}: ${windStr} ${waveStr}
-           </div>`,
-      iconSize:[100,20], iconAnchor:[50,10],
-    });
-    const m=L.marker([b.lat,b.lon],{icon}).addTo(map);
-    m.bindPopup(`<b>${b.name}</b><br>Wind: ${windStr}<br>Seas: ${waveStr||'—'}<br>SST: ${b.sst||'—'}°F`);
-    buoyMarkers.push(m);
-  });
-}
-
-// ── CONDITIONS RENDERING ──────────────────────────────────────────────
-function renderConditions(data){
-  // Update header badge
-  const badge=document.getElementById('go-badge');
-  badge.textContent=data.status;
-  badge.className=`go-badge go-${data.status}`;
-
-  // Update go box
-  const gobox=document.getElementById('gobox');
-  gobox.className=`gobox-${data.status}`;
-  const colors={'GO':'#44ff88','CAUTION':'#ffcc00','NO-GO':'#ff4444'};
-  const color=colors[data.status]||'#aaa';
-  document.getElementById('go-title').textContent=data.status;
-  document.getElementById('go-title').style.color=color;
-  document.getElementById('go-sub').textContent=
-    data.status==='GO'?'Conditions look fishable':
-    data.status==='CAUTION'?'Exercise caution':
-    'Stay in the dock';
-  document.getElementById('go-issues').innerHTML=
-    (data.issues||[]).map(i=>`• ${i}`).join('<br>') || '';
-
-  // Render buoy cards
-  const buoyList=document.getElementById('buoys-list');
-  buoyList.innerHTML=(data.buoys||[]).map(b=>`
-    <div class="buoy-card">
-      <div class="buoy-name">${b.name} <span style="color:#555;font-size:9px">(Station ${b.id})</span></div>
-      <div class="buoy-grid">
-        <div class="buoy-stat">
-          <div class="buoy-val" style="color:#88ccff">${b.wind?.speed??'—'}<span style="font-size:9px">kt</span></div>
-          <div class="buoy-lbl">${b.wind?.dirLabel||''} Wind</div>
-        </div>
-        <div class="buoy-stat">
-          <div class="buoy-val" style="color:#4488ff">${b.waves?.height??'—'}<span style="font-size:9px">ft</span></div>
-          <div class="buoy-lbl">Seas ${b.waves?.period?b.waves.period+'s':''}</div>
-        </div>
-        <div class="buoy-stat">
-          <div class="buoy-val" style="color:${b.sst?sstHex(b.sst):'#aaa'}">${b.sst??'—'}<span style="font-size:9px">°F</span></div>
-          <div class="buoy-lbl">SST</div>
-        </div>
-      </div>
-      <div class="buoy-time">${b.timestamp?new Date(b.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</div>
-    </div>`).join('');
-
-  // Render forecast
-  const fcastList=document.getElementById('forecast-list');
-  fcastList.innerHTML=(data.forecasts||[]).map(f=>`
-    <div class="fcast-card">
-      <div class="fcast-zone">${f.zone}</div>
-      ${(f.periods||[]).map(p=>`
-        <div class="fcast-period">
-          <span class="fcast-name">${p.name}:</span>${p.text}
-        </div>`).join('')}
-    </div>`).join('');
-
-  // Render buoy markers on map
-  renderBuoyMarkers(data.buoys);
-}
-
-// ── SPECIES ───────────────────────────────────────────────────────────
-const FISH_CLIENT=[
-  {id:'mahi',name:'Mahi-Mahi',icon:'🐬',c:'#00e5ff',ca:'rgba(0,229,255,.15)',sst:[75,84],chl:[.10,.80],dep:[91,600],w:{sst:.30,chl:.25,dep:.30,lunar:.10},tip:'Gulf Stream edge and weed lines 10-30mi offshore.'},
-  {id:'sail',name:'Sailfish',icon:'⚡',c:'#cc88ff',ca:'rgba(200,136,255,.15)',sst:[74,83],chl:[.05,.50],dep:[30,200],w:{sst:.35,chl:.20,dep:.30,lunar:.10},tip:'FL Sailfish Capital. Peak Nov-Apr. Shelf break 100-300ft.'},
-  {id:'wahoo',name:'Wahoo',icon:'🚀',c:'#ff8822',ca:'rgba(255,136,34,.15)',sst:[72,82],chl:[.05,.40],dep:[600,3000],w:{sst:.30,chl:.20,dep:.40,lunar:.05},tip:'Deep offshore 600-3000ft. Current edges key.'},
-  {id:'bft',name:'Blackfin Tuna',icon:'🐟',c:'#22ddee',ca:'rgba(34,221,238,.15)',sst:[72,80],chl:[.20,1.50],dep:[50,400],w:{sst:.35,chl:.25,dep:.25,lunar:.10},tip:'Reef edges and color breaks 80-600ft.'},
-  {id:'king',name:'Kingfish',icon:'👑',c:'#ffdd00',ca:'rgba(255,221,0,.15)',sst:[68,80],chl:[.50,2.50],dep:[20,120],w:{sst:.25,chl:.30,dep:.25,lunar:.10},tip:'Nearshore reefs 30-200ft. Spring and fall peak.'},
-  {id:'cobia',name:'Cobia',icon:'🦈',c:'#88dd00',ca:'rgba(136,221,0,.15)',sst:[68,78],chl:[.80,3.50],dep:[0,80],w:{sst:.25,chl:.20,dep:.20,lunar:.15},tip:'Follow rays near nearshore markers. Spring Mar-May.'},
-  {id:'snap',name:'Snapper',icon:'🔴',c:'#ff7777',ca:'rgba(255,119,119,.15)',sst:[65,82],chl:[.40,2.50],dep:[40,300],w:{sst:.20,chl:.20,dep:.30,lunar:.20},tip:'Reefs and wrecks 60-600ft. Moon phase critical.'},
-  {id:'grp',name:'Grouper',icon:'🟫',c:'#dd9933',ca:'rgba(221,153,51,.15)',sst:[62,78],chl:[.50,3.00],dep:[40,200],w:{sst:.25,chl:.20,dep:.35,lunar:.15},tip:'Deep ledges and wrecks 60-300ft.'},
-  {id:'aj',name:'Amberjack',icon:'⚓',c:'#ffaa44',ca:'rgba(255,170,68,.15)',sst:[68,82],chl:[.40,2.00],dep:[60,250],w:{sst:.25,chl:.15,dep:.40,lunar:.10},tip:'Deep wrecks 100-400ft. Always near bottom.'},
-  {id:'tarp',name:'Tarpon',icon:'🥈',c:'#aabbdd',ca:'rgba(170,187,221,.15)',sst:[74,86],chl:[.80,4.00],dep:[0,30],w:{sst:.20,chl:.15,dep:.15,lunar:.25},tip:'Silver Kings peak Apr-Jul. Outgoing tides at inlets.'},
-  {id:'flnd',name:'Flounder',icon:'🫓',c:'#ccbb77',ca:'rgba(204,187,119,.15)',sst:[58,74],chl:[1.00,4.00],dep:[0,30],w:{sst:.30,chl:.20,dep:.25,lunar:.10},tip:'Sandy inlets 5-60ft. Best Oct-Feb.'},
-  {id:'dolph',name:'Dolphin',icon:'🌊',c:'#44ee99',ca:'rgba(68,238,153,.15)',sst:[76,85],chl:[.10,.60],dep:[100,3000],w:{sst:.30,chl:.25,dep:.30,lunar:.10},tip:'Gulf Stream weed lines May-Sep.'},
-];
-
-function buildBtns(){
-  const g=document.getElementById('spgrid');if(!g)return;
-  g.innerHTML='';
-  FISH_CLIENT.forEach(fish=>{
-    const btn=document.createElement('div');
-    btn.className='spbtn';btn.id='fb-'+fish.id;
-    btn.style.setProperty('--fc',fish.c);btn.style.setProperty('--fca',fish.ca);
-    btn.innerHTML=`<span class="spico">${fish.icon}</span><span class="spnm">${fish.name}</span>`;
-    btn.onclick=()=>{
-      FISH_CLIENT.forEach(f=>{const b=document.getElementById('fb-'+f.id);if(b)b.classList.remove('on');});
-      closeWpt();
-      if(AF&&AF.id===fish.id){
-        AF=null; currentWaypoints=[];
-        renderWaypoints();
-        clearOverlays(); if(LY.iso&&oceanData?.isotherms) renderIsotherms(oceanData.isotherms);
-        if(LY.brk&&oceanData?.tempBreaks) renderTempBreaks(oceanData.tempBreaks);
-        buildSpotCards(); sched();
-      } else {
-        AF=fish; btn.classList.add('on');
-        document.getElementById('sptip').innerHTML=`<b style="color:${fish.c}">${fish.icon} ${fish.name}</b> — ${fish.tip}`;
-        showTab('spots',null);
-        document.getElementById('spotlist').innerHTML='<div style="color:#555;font-size:11px;padding:14px 0;text-align:center">⏳ Loading '+fish.name+' spots...</div>';
-        loadWaypoints(fish.id);
-        if(LY.hot&&oceanData) renderFishZone(fish, oceanData);
-      }
+    return -1;
+  };
+  const col = {
+    name: find('product name', ['name','product']),
+    ai: find('active ingredient', ['active','ingredient','ai']),
+    epa: find('epa reg', ['epa','reg no','registration']),
+    signal: find('signal word', ['signal']),
+    tox: find('tox category', ['tox','toxicity','category']),
+    pests: find('target pest', ['pest','target']),
+    ppe: find('ppe', ['protective','equipment']),
+    fa_skin: find('fa skin', ['skin','first aid skin']),
+    fa_eye: find('fa eye', ['eye','eyes','first aid eye']),
+    fa_inhale: find('fa inhale', ['inhale','inhalation','first aid inhale']),
+    storage: find('storage', ['store','handling']),
+    rei: find('rei', ['re-entry','reentry']),
+    ru: find('restricted use', ['restricted','rup'])
+  };
+  return lines.slice(1).map((line, idx) => {
+    const cells = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || line.split(',');
+    const c = i => (cells[i] || '').replace(/^"|"$/g, '').trim();
+    const name = col.name >= 0 ? c(col.name) : '';
+    if (!name) return null;
+    return {
+      id: 'sheet_' + idx,
+      name,
+      ai: col.ai >= 0 ? c(col.ai) : '',
+      epa: col.epa >= 0 ? c(col.epa) : '',
+      signal: (col.signal >= 0 ? c(col.signal) : 'CAUTION').toUpperCase() || 'CAUTION',
+      tox: col.tox >= 0 ? c(col.tox) : 'III',
+      pests: col.pests >= 0 ? c(col.pests) : '',
+      ppe: col.ppe >= 0 ? c(col.ppe) : '',
+      fa: {
+        skin: col.fa_skin >= 0 ? c(col.fa_skin) : '',
+        eye: col.fa_eye >= 0 ? c(col.fa_eye) : '',
+        inhale: col.fa_inhale >= 0 ? c(col.fa_inhale) : ''
+      },
+      storage: col.storage >= 0 ? c(col.storage) : '',
+      rei: col.rei >= 0 ? c(col.rei) : '',
+      ru: col.ru >= 0 ? c(col.ru) : 'No',
+      fromSheet: true
     };
-    g.appendChild(btn);
-  });
+  }).filter(Boolean);
 }
 
-function buildSpotCards(){
-  const el=document.getElementById('spotlist');if(!el)return;
-  if(!AF||!currentWaypoints.length){
-    el.innerHTML=AF?'<div style="color:#444;font-size:11px;padding:8px 0">No spots found</div>':'<div style="color:#444;font-size:11px;padding:8px 0">Select a species above</div>';
+async function loadSheet() {
+  const dot = document.getElementById('status-dot');
+  const statusEl = document.getElementById('status-text');
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    sheetProducts = parseCSV(text);
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data: sheetProducts}));
+    dot.className = 'status-dot ok';
+    statusEl.textContent = sheetProducts.length + ' products loaded from Google Sheets';
+    showDefaultSearch();
+  } catch(e) {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached) {
+      sheetProducts = cached.data;
+      dot.className = 'status-dot';
+      const ago = Math.round((Date.now() - cached.ts) / 60000);
+      statusEl.textContent = 'Offline — using cached data (' + ago + ' min ago)';
+      document.getElementById('offline-banner').style.display = 'block';
+    } else {
+      dot.className = 'status-dot err';
+      statusEl.textContent = 'Could not load sheet — check connection';
+    }
+    showDefaultSearch();
+  }
+}
+
+function showDefaultSearch() {
+  const ra = document.getElementById('results-area');
+  const total = allProducts().length;
+  ra.innerHTML = `<div class="empty-state">${total} products in inventory. Search by name, active ingredient, or EPA reg. no.<br><br>In an emergency, call Poison Control: <strong>1-800-222-1222</strong></div>`;
+}
+
+function doSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  document.getElementById('detail-area').style.display = 'none';
+  const ra = document.getElementById('results-area');
+  ra.style.display = 'block';
+  if (!q) { showDefaultSearch(); return; }
+  const matches = allProducts().filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    (p.ai||'').toLowerCase().includes(q) ||
+    (p.epa||'').toLowerCase().includes(q) ||
+    (p.pests||'').toLowerCase().includes(q)
+  );
+  if (!matches.length) {
+    ra.innerHTML = `<div class="empty-state">No products found for "<strong>${q}</strong>".<br>Add it to your inventory, or look it up:<br><br>
+      <a class="sds-link" href="https://www.epa.gov/pesticide-registration/pesticide-product-label-system-ppls" target="_blank">EPA PPLS →</a>&nbsp;
+      <a class="sds-link" href="https://npic.orst.edu" target="_blank">NPIC →</a></div>`;
     return;
   }
-  el.innerHTML=currentWaypoints.map(w=>{
-    const pct=Math.round(w.score.total*100);
-    const feat=nearFeat(w.lon,w.lat);
-    const sr=ratingLabel(w.score.sst),cr=ratingLabel(w.score.chl),dr=ratingLabel(w.score.dep);
-    return `<div class="scard" id="sc-${w.letter}" style="--fc:${AF.c}" onclick="tapCard('${w.letter}')">
-      <div class="sctop">
-        <div class="scltr" style="background:${AF.c}">${w.letter}</div>
-        <div><div class="scnm">${feat?feat.name:'Open Water'}</div>
-        <div class="scco">${coordStr(w.lat,w.lon)}</div></div>
-        <div class="scpct" style="color:${AF.c}">${pct}%</div>
+  ra.innerHTML = matches.map(p => `
+    <div class="result-item" onclick="showDetail('${p.id}')">
+      <div style="min-width:0">
+        <div class="result-name">${p.name}${p.fromSheet ? '' : ' <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">[local]</span>'}</div>
+        <div class="result-meta">${[p.ai, p.epa ? 'EPA '+p.epa : '', p.pests].filter(Boolean).join(' · ')}</div>
       </div>
-      <div class="sreas">
-        <div class="srea">🌡 SST ${w.sst}°F <span class="srlt ${sr.cls}" style="margin-left:auto">${sr.txt}</span></div>
-        <div class="srea">⚓ ~${w.dep.toLocaleString()}ft <span class="srlt ${dr.cls}" style="margin-left:auto">${dr.txt}</span></div>
-        <div class="srea">🌿 Chl ${w.chl} <span class="srlt ${cr.cls}" style="margin-left:auto">${cr.txt}</span></div>
-        ${w.gs>0.35?'<div class="srea">🌊 Gulf Stream nearby</div>':''}
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span class="sig-badge sig-${p.signal||'CAUTION'}">${p.signal||'CAUTION'}</span>
+        <span class="result-arrow">›</span>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
-function tapCard(letter){
-  const w=currentWaypoints.find(x=>x.letter===letter);if(!w)return;
-  clickedWpt=(clickedWpt&&clickedWpt.letter===letter)?null:w;
-  if(clickedWpt){showWpt(clickedWpt);map.setView([w.lat,w.lon],map.getZoom());}
-  else closeWpt();
-}
+function showDetail(id) {
+  const p = allProducts().find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('results-area').style.display = 'none';
+  const det = document.getElementById('detail-area');
+  det.style.display = 'block';
+  const ppePills = (p.ppe||'').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="ppe-pill">${s}</span>`).join('');
+  det.innerHTML = `
+    <button class="back-btn" onclick="backToSearch()">&#8592; Back to results</button>
+    <div class="detail-card">
+      <div class="detail-header">
+        <div class="detail-name">${p.name}</div>
+        <div class="detail-ai">${p.ai||''}</div>
+        <div class="detail-pills">
+          <span class="sig-badge sig-${p.signal||'CAUTION'}">${p.signal||'CAUTION'}</span>
+          ${p.epa ? `<span class="meta-pill">EPA ${p.epa}</span>` : ''}
+          ${p.tox ? `<span class="meta-pill">Cat. ${p.tox}</span>` : ''}
+          ${p.rei ? `<span class="meta-pill">REI: ${p.rei}</span>` : ''}
+          ${p.ru === 'Yes' ? '<span class="meta-pill rup-pill">Restricted Use (RUP)</span>' : ''}
+        </div>
+      </div>
 
-function showWpt(w){
-  const el=document.getElementById('wptpop');if(!el)return;
-  const pct=Math.round(w.score.total*100);
-  const feat=nearFeat(w.lon,w.lat);
-  const sr=ratingLabel(w.score.sst),cr=ratingLabel(w.score.chl),dr=ratingLabel(w.score.dep);
-  document.getElementById('wptinner').style.borderColor=AF.c;
-  document.getElementById('wptltr').style.background=AF.c;
-  document.getElementById('wptltr').textContent=w.letter;
-  document.getElementById('wptsp').textContent=`${AF.icon} ${AF.name} — Spot ${w.letter}`;
-  document.getElementById('wptco').textContent=coordStr(w.lat,w.lon);
-  document.getElementById('wptpct').style.color=AF.c;
-  document.getElementById('wptpct').textContent=pct+'%';
-  document.getElementById('wptreas').innerHTML=`
-    <div class="wr">🌡 SST <b style="color:${sstHex(w.sst)}">${w.sst}°F</b><span class="wbdg ${sr.cls}">${sr.txt}</span></div>
-    <div class="wr">⚓ Depth <b style="color:#88ccff">~${w.dep.toLocaleString()}ft</b><span class="wbdg ${dr.cls}">${dr.txt}</span></div>
-    <div class="wr">🌿 Chl <b style="color:#88ff44">${w.chl} mg/m³</b><span class="wbdg ${cr.cls}">${cr.txt}</span></div>
-    ${feat?`<div class="wr">📍 <b style="color:#ddd">${feat.name}</b></div>`:''}
-    ${w.gs>0.35?'<div class="wr">🌊 <b style="color:#44aaff">Gulf Stream nearby</b></div>':''}`;
-  el.style.display='block';
-}
-function closeWpt(){document.getElementById('wptpop').style.display='none';clickedWpt=null;}
+      <div class="fa-block">
+        <div class="block-label">&#9888; First aid — emergency response</div>
+        <div class="fa-grid">
+          <div class="fa-item"><div class="fa-type">Skin contact</div><p>${p.fa?.skin || 'See product label.'}</p></div>
+          <div class="fa-item"><div class="fa-type">Eye contact</div><p>${p.fa?.eye || 'See product label.'}</p></div>
+          <div class="fa-item"><div class="fa-type">Inhalation</div><p>${p.fa?.inhale || 'See product label.'}</p></div>
+          <div class="fa-item"><div class="fa-type">Ingestion</div><p>Do NOT induce vomiting. Call Poison Control (1-800-222-1222) or 911 immediately. Have product label ready.</p></div>
+        </div>
+      </div>
 
-// ── LUNAR ─────────────────────────────────────────────────────────────
-function lunarPhase(date=new Date()){
-  const known=new Date('2024-01-11T00:00:00Z'),cycle=29.53058867;
-  const phase=((( (date-known)/864e5 )%cycle)+cycle)%cycle/cycle;
-  const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];
-  const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
-  return{phase,pct:Math.round((1-Math.abs(1-phase*2))*100),name:names[Math.floor(phase*8)%8],icon:icons[Math.floor(phase*8)%8],solunar:Math.round((Math.cos(phase*2*Math.PI)+1)/2*100)};
-}
+      ${ppePills ? `<div class="detail-section"><div class="block-label">PPE required</div><div class="ppe-pills">${ppePills}</div></div>` : ''}
 
-function renderLunarPanel(lp){
-  document.getElementById('lunarinner').innerHTML=`
-    <div class="lbox">
-      <div class="ltit">Lunar Phase</div>
-      <div class="lbig">${lp.icon}</div>
-      <div class="lval">${lp.name}</div>
-      <div class="lsub">${lp.pct}% illuminated</div>
-      <div class="lbar"><div class="lfill" style="width:${lp.solunar}%;background:#e8c840"></div></div>
-      <div class="lsub" style="margin-top:3px">Solunar: ${lp.solunar}/100</div>
-    </div>
-    <div class="lbox">
-      <div class="ltit">Best Bite Times</div>
-      <div class="lsub" style="line-height:1.8">
-        Peak feeding occurs near new and full moon. Solunar score above 80 = prime time.<br><br>
-        <b style="color:${lp.solunar>75?'#44ff88':lp.solunar>50?'#ffcc00':'#ff7777'}">
-        ${lp.solunar>75?'PRIME — Fish now!':lp.solunar>50?'GOOD — Above average':lp.solunar>25?'AVERAGE':'SLOW — Off peak'}
-        </b>
+      <div class="detail-section">
+        <div class="block-label">Compliance &amp; label info</div>
+        <div class="comp-grid">
+          <div class="comp-box"><div class="comp-val">${p.epa||'—'}</div><div class="comp-lbl">EPA Reg. No.</div></div>
+          <div class="comp-box"><div class="comp-val">${p.signal||'—'}</div><div class="comp-lbl">Signal word</div></div>
+          <div class="comp-box"><div class="comp-val">Cat. ${p.tox||'—'}</div><div class="comp-lbl">Toxicity</div></div>
+          <div class="comp-box"><div class="comp-val">${p.rei||'See label'}</div><div class="comp-lbl">REI</div></div>
+          <div class="comp-box"><div class="comp-val">${p.ru==='Yes'?'RUP':'General'}</div><div class="comp-lbl">Use class</div></div>
+        </div>
+      </div>
+
+      ${p.pests ? `<div class="detail-section"><div class="block-label">Labeled target pests</div><p class="info-text">${p.pests}</p></div>` : ''}
+      ${p.storage ? `<div class="detail-section"><div class="block-label">Storage &amp; handling</div><p class="info-text">${p.storage}</p></div>` : ''}
+
+      <div class="detail-section">
+        <div class="block-label">Full label &amp; SDS</div>
+        <div class="sds-links">
+          <a class="sds-link" href="https://www.epa.gov/pesticide-registration/pesticide-product-label-system-ppls" target="_blank">EPA PPLS →</a>
+          <a class="sds-link" href="https://npic.orst.edu" target="_blank">NPIC →</a>
+          <a class="sds-link" href="https://www.cdms.net/LDat/ld${encodeURIComponent(p.epa||'')}.pdf" target="_blank">CDMS label →</a>
+          <a class="sds-link" href="https://www.cdms.net/LDat/ldMSDS.asp?brand=${encodeURIComponent(p.name)}" target="_blank">SDS →</a>
+        </div>
       </div>
     </div>`;
 }
 
-// ── MAP EVENTS ────────────────────────────────────────────────────────
-function onMapClick(e){
-  const {lat,lng}=e.latlng;
-  document.getElementById('coords').textContent=coordStr(lat,lng);
-  // Show conditions tab with data for clicked point
-  showTab('cond',null); openSheet();
-}
-function onMapMouseMove(e){
-  const {lat,lng}=e.latlng;
-  document.getElementById('coords').textContent=coordStr(lat,lng);
-}
-function onZoom(){
-  document.getElementById('zoom-lbl').textContent='z'+map.getZoom();
+function backToSearch() {
+  document.getElementById('detail-area').style.display = 'none';
+  document.getElementById('results-area').style.display = 'block';
 }
 
-// ── LAYER TOGGLES ─────────────────────────────────────────────────────
-function tog(id){
-  LY[id]=!LY[id];
-  document.getElementById('t-'+id).classList.toggle('on',LY[id]);
-  if(['iso','brk','chl','hot'].includes(id)) renderOceanLayers();
-  if(id==='buoys'&&conditionsData) renderBuoyMarkers(LY.buoys?conditionsData.buoys:[]);
-}
-function toggleLyr(e){
-  if(e)e.stopPropagation();
-  document.getElementById('lyrpanel').classList.toggle('show');
-}
-document.getElementById('mapwrap').addEventListener('click',e=>{
-  if(!e.target.closest('#lyrpanel')&&!e.target.closest('#fab-tl'))
-    document.getElementById('lyrpanel').classList.remove('show');
-});
-document.getElementById('lyrpanel').addEventListener('click',e=>e.stopPropagation());
-
-// ── ZOOM & GPS ─────────────────────────────────────────────────────────
-function zoomIn(){map.zoomIn();}
-function zoomOut(){map.zoomOut();}
-function zoomReset(){map.setView([27.5,-79.7],7);}
-function doGPS(){
-  const b=document.getElementById('gps-btn');
-  b.textContent='⏳';
-  navigator.geolocation.getCurrentPosition(
-    pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],10);b.textContent='◎';},
-    ()=>{b.textContent='◎';showToast('Location unavailable');},
-    {enableHighAccuracy:true,timeout:8000}
-  );
+function switchTab(t) {
+  activeTab = t;
+  document.getElementById('tab-search').style.display = t === 'search' ? 'block' : 'none';
+  document.getElementById('tab-manage').style.display = t === 'manage' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((el, i) => el.classList.toggle('active', (t==='search'&&i===0)||(t==='manage'&&i===1)));
+  if (t === 'manage') renderManage();
 }
 
-// ── BOTTOM SHEET ──────────────────────────────────────────────────────
-function toggleSheet(){sheetOpen=!sheetOpen;document.getElementById('bs').classList.toggle('shut',!sheetOpen);}
-function openSheet(){sheetOpen=true;document.getElementById('bs').classList.remove('shut');}
-
-function showTab(tab,e){
-  if(e)e.stopPropagation();
-  activeTab=tab;
-  if(!sheetOpen)openSheet();
-  ['cond','sp','spots','lunar'].forEach(t=>{
-    document.getElementById('bst-'+t).classList.toggle('on',t===tab);
-  });
-  document.getElementById('condpanel').style.display=tab==='cond'?'block':'none';
-  document.getElementById('sppanel').style.display=tab==='sp'?'block':'none';
-  document.getElementById('spotpanel').style.display=tab==='spots'?'block':'none';
-  document.getElementById('lunarpanel').style.display=tab==='lunar'?'flex':'none';
+function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Product name is required.'); return; }
+  const p = {
+    id: 'local_' + Date.now(),
+    name,
+    ai: document.getElementById('f-ai').value.trim(),
+    epa: document.getElementById('f-epa').value.trim(),
+    signal: document.getElementById('f-signal').value,
+    tox: document.getElementById('f-tox').value,
+    pests: document.getElementById('f-pests').value.trim(),
+    ppe: document.getElementById('f-ppe').value.trim(),
+    fa: {
+      skin: document.getElementById('f-fa-skin').value.trim(),
+      eye: document.getElementById('f-fa-eye').value.trim(),
+      inhale: document.getElementById('f-fa-inhale').value.trim()
+    },
+    storage: document.getElementById('f-storage').value.trim(),
+    rei: document.getElementById('f-rei').value.trim(),
+    ru: document.getElementById('f-ru').value,
+    fromSheet: false
+  };
+  localProducts.push(p);
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(localProducts));
+  ['f-name','f-ai','f-epa','f-ppe','f-pests','f-fa-skin','f-fa-eye','f-fa-inhale','f-storage','f-rei'].forEach(id => document.getElementById(id).value = '');
+  renderManage();
+  alert(name + ' saved to local inventory.');
 }
 
-// ── FORECAST ─────────────────────────────────────────────────────────
-function initForecastTabs(){
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  for(let i=0;i<=4;i++){
-    const d=new Date(); d.setDate(d.getDate()+i);
-    const el=document.getElementById('fd-'+i);
-    if(el)el.textContent=i===0?'Today':days[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate();
-  }
-}
-function getForecastDate(offset){
-  const d=new Date(); d.setDate(d.getDate()+offset);
-  return d.toISOString().slice(0,10);
-}
-function setDay(off){
-  forecastDay=off;
-  for(let i=0;i<=4;i++){const t=document.getElementById('ft-'+i);if(t)t.classList.toggle('on',i===off);}
-  // Reload ocean data for this forecast day
-  const date=off>0?getForecastDate(off):null;
-  loadOceanData(date);
-  if(AF) loadWaypoints(AF.id);
-}
-function applyDate(){
-  const ds=document.getElementById('datein').value;
-  if(!ds)return;
-  loadOceanData(ds);
+function deleteProduct(id) {
+  if (!confirm('Remove this product?')) return;
+  localProducts = localProducts.filter(p => p.id !== id);
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(localProducts));
+  renderManage();
 }
 
-// ── SST COLOR BAR ────────────────────────────────────────────────────
-function buildSSTBar(){
-  const canvas=document.getElementById('sst-canvas');if(!canvas)return;
-  const c=canvas.getContext('2d'),grd=c.createLinearGradient(0,0,160,0);
-  SST_STOPS.forEach(([t,[r,g,b]])=>grd.addColorStop(Math.max(0,Math.min(1,(t-68)/16)),`rgb(${r},${g},${b})`));
-  c.fillStyle=grd;c.fillRect(0,0,160,10);
-  const lbl=document.getElementById('sst-labels');
-  if(lbl)lbl.innerHTML='<span>68F</span><span>74F</span><span>79F</span><span>84F</span>';
+function renderManage() {
+  const el = document.getElementById('manage-list');
+  const sheet = sheetProducts.length;
+  const local = localProducts.length;
+  if (!sheet && !local) { el.innerHTML = '<div style="font-size:13px;color:var(--text3)">No products in inventory.</div>'; return; }
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:10px">${sheet} from Google Sheets · ${local} local additions</div>
+    <div style="overflow-x:auto">
+    <table class="inv-table">
+      <thead><tr><th>Product</th><th>Active ingredient</th><th>EPA Reg.</th><th>Signal</th><th>RUP</th><th></th></tr></thead>
+      <tbody>
+        ${sheetProducts.map(p => `<tr>
+          <td style="font-weight:500">${p.name}</td>
+          <td style="color:var(--text2)">${p.ai||'—'}</td>
+          <td style="font-family:var(--mono);font-size:12px">${p.epa||'—'}</td>
+          <td><span class="sig-badge sig-${p.signal||'CAUTION'}">${p.signal||'—'}</span></td>
+          <td style="color:var(--text2)">${p.ru==='Yes'?'Yes':'No'}</td>
+          <td><span style="font-size:11px;color:var(--text3);font-family:var(--mono)">sheet</span></td>
+        </tr>`).join('')}
+        ${localProducts.map(p => `<tr>
+          <td style="font-weight:500">${p.name}</td>
+          <td style="color:var(--text2)">${p.ai||'—'}</td>
+          <td style="font-family:var(--mono);font-size:12px">${p.epa||'—'}</td>
+          <td><span class="sig-badge sig-${p.signal||'CAUTION'}">${p.signal||'—'}</span></td>
+          <td style="color:var(--text2)">${p.ru==='Yes'?'Yes':'No'}</td>
+          <td><button class="del-btn" onclick="deleteProduct('${p.id}')">Remove</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
 }
 
-let rafPending=false;
-function sched(){if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;});}}
+window.addEventListener('online', () => { document.getElementById('offline-banner').style.display = 'none'; loadSheet(); });
+window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display = 'block'; });
+
+loadSheet();
 </script>
 </body>
 </html>
