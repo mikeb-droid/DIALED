@@ -13,7 +13,7 @@ module.exports=async function handler(req,res){
     if(includes.includes('gs'))response.gsGrid=row.gs_grid;
     if(includes.includes('isotherms'))response.isotherms=row.isotherms;
     if(includes.includes('breaks'))response.tempBreaks=row.temp_breaks;
-    res.setHeader('Cache-Control','s-maxage=3600,stale-while-revalidate=86400');
+    res.setHeader('Cache-Control','s-maxage=0,must-revalidate');
     return res.status(200).json(response);
   }catch(err){return res.status(500).json({error:err.message});}
 }

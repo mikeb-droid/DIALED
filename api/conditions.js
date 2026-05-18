@@ -10,7 +10,7 @@ module.exports=async function handler(req,res){
     const forecasts=await Promise.allSettled(zoneIds.map(z=>fetchMarineForecast(z))).then(r=>r.filter(x=>x.status==='fulfilled'&&x.value).map(x=>x.value));
     const status=getGoStatus(buoys,forecasts,boat);
     const formattedBuoys=buoys.map(b=>({id:b.id,name:b.name,lat:b.lat,lon:b.lon,timestamp:b.timestamp,wind:b.wind,waves:b.waves,sst:b.sst,airTemp:b.airTemp,distance:lat&&lon?+(Math.hypot(b.lat-parseFloat(lat),b.lon-parseFloat(lon))*60).toFixed(0):null})).sort((a,b)=>(a.distance||999)-(b.distance||999));
-    res.setHeader('Cache-Control','s-maxage=1800,stale-while-revalidate=3600');
+    res.setHeader('Cache-Control','s-maxage=0,must-revalidate');
     return res.status(200).json({status:status.status,issues:status.issues,limits:status.limits,buoys:formattedBuoys,forecasts:forecasts.map(f=>({zone:f.zone,updated:f.updated,periods:f.periods.slice(0,3)})),fetchedAt:new Date().toISOString()});
   }catch(err){return res.status(500).json({error:err.message});}
 }
