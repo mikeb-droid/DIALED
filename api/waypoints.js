@@ -11,7 +11,7 @@ module.exports=async function handler(req,res){
     const waypoints=(row.waypoints&&row.waypoints[fish])||[];
     const fishData=FISH_MAP[fish];
     const lp=lunarPhase(new Date());
-    res.setHeader('Cache-Control','s-maxage=3600,stale-while-revalidate=86400');
+    res.setHeader('Cache-Control','s-maxage=0,must-revalidate');
     return res.status(200).json({fish:{id:fish,name:fishData.name,icon:fishData.icon,color:fishData.c,tip:fishData.tip},waypoints,lunar:lp,date:row.date,updatedAt:row.updated_at});
   }catch(err){return res.status(500).json({error:err.message});}
 }
