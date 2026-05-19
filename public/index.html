@@ -575,32 +575,37 @@ function renderTempBreaks(breaks){
 function renderChlStipple(chlGrid){
   if(!chlGrid) return;
   const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  const canvas=L.canvas({padding:0.1});
+  
+  // Use an SVG overlay for smooth color wash
   const group=L.layerGroup();
-  // Use larger step for performance but vary dot size by concentration
-  const step=3;
+  const step=4; // sample every 4 cells for performance
+  
+  // Create rectangles for each cell colored by chlorophyll
   for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
     const chl=chlGrid[iy*NX+ix];
-    if(!chl||chl<0.20) continue;
-    const lat=GA1-iy/NY*(GA1-GA0);
-    const lon=GL0+ix/NX*(GL1-GL0);
-    // Classify into 4 levels
-    let radius, opacity, color;
+    if(!chl||chl<0.15) continue;
+    const lat1=GA1-iy/NY*(GA1-GA0);
+    const lat2=GA1-(iy+step)/NY*(GA1-GA0);
+    const lon1=GL0+ix/NX*(GL1-GL0);
+    const lon2=GL0+(ix+step)/NX*(GL1-GL0);
+    
+    // Color scale: low=teal, medium=green, high=bright lime
+    let color, opacity;
     if(chl>=2.0){
-      radius=3.5; opacity=0.75; color='#00ff44'; // High - bright green
+      color='#00ff88'; opacity=0.35;
     } else if(chl>=1.0){
-      radius=2.5; opacity=0.60; color='#44dd33'; // Medium-high
+      color='#22dd66'; opacity=0.28;
     } else if(chl>=0.5){
-      radius=1.8; opacity=0.45; color='#88cc22'; // Medium
-      if(Math.random()>0.6) continue; // thin out
+      color='#44cc44'; opacity=0.20;
+    } else if(chl>=0.3){
+      color='#66bb33'; opacity=0.14;
     } else {
-      radius=1.2; opacity=0.30; color='#aabb44'; // Low
-      if(Math.random()>0.35) continue; // thin out more
+      color='#88aa22'; opacity=0.09;
     }
-    L.circleMarker([lat,lon],{
-      radius, color:'transparent',
-      fillColor:color, fillOpacity:opacity,
-      weight:0, renderer:canvas,
+    
+    L.rectangle([[lat1,lon1],[lat2,lon2]],{
+      color:'transparent', fillColor:color,
+      fillOpacity:opacity, weight:0,
     }).addTo(group);
   }
   group.addTo(map);
