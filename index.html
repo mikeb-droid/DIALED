@@ -520,12 +520,15 @@ function renderIsotherms(isotherms){
     const [r,g,b]=sstRGB(T);
     const color=`rgb(${r},${g},${b})`;
     // Thinner lines - minor every 1F, major every 2F
+    // Group segments into chains and filter vertical artifacts
     for(let i=0;i<segs.length;i+=4){
-      // Skip nearly-vertical segments (interpolation artifacts)
-      const dLon=Math.abs(segs[i]-segs[i+2]);
-      const dLat=Math.abs(segs[i+1]-segs[i+3]);
-      if(dLon<0.001 && dLat>0.05) continue; // pure vertical = artifact
-      const latlngs=[[segs[i+1],segs[i]],[segs[i+3],segs[i+2]]];
+      const lon1=segs[i],lat1=segs[i+1],lon2=segs[i+2],lat2=segs[i+3];
+      const dLon=Math.abs(lon1-lon2);
+      const dLat=Math.abs(lat1-lat2);
+      // Skip segments that are nearly perfectly vertical (lon barely changes)
+      // Real ocean fronts have significant E-W component
+      if(dLon < 0.003) continue; // skip near-vertical segments
+      const latlngs=[[lat1,lon1],[lat2,lon2]];
       L.polyline(latlngs,{
         color, weight:major?1.2:0.5,
         opacity:major?0.85:0.35

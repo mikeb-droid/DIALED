@@ -37,7 +37,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 #map{width:100%;height:100%}
 
 /* FLOATING CONTROLS */
-#fab-tl{position:fixed;top:55px;left:8px;z-index:1000;display:flex;flex-direction:column;gap:5px}
+#fab-tl{position:absolute;top:8px;left:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
 #fab-tr{position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
 .fab{width:36px;height:36px;border-radius:10px;border:1px solid #333;background:rgba(8,8,8,.9);color:#bbb;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;backdrop-filter:blur(3px)}
 .fab:active{transform:scale(.95)}
@@ -45,7 +45,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 #zoom-lbl{text-align:center;font-size:8px;color:#333;font-family:monospace}
 
 /* LAYER PANEL */
-#lyrpanel{position:fixed;top:100px;left:8px;z-index:1000;background:rgba(8,8,8,.96);border:1px solid #2a2a2a;border-radius:10px;padding:8px 10px;display:none;min-width:148px}
+#lyrpanel{position:absolute;top:50px;left:8px;z-index:15;background:rgba(8,8,8,.96);border:1px solid #2a2a2a;border-radius:10px;padding:8px 10px;display:none;min-width:148px}
 #lyrpanel.show{display:block}
 .lrow{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #111;font-size:11px;color:#777;gap:8px}
 .lrow:last-child{border-bottom:none}
@@ -196,13 +196,14 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 
   <!-- Layer FAB -->
   <div id="fab-tl">
-    <button class="fab on" onclick="toggleLyr(event)" style="background:rgba(0,0,0,0.85);border:1px solid #555;color:#fff;font-size:18px">⚙</button>
+    <button class="fab on" onclick="toggleLyr(event)">⚙</button>
   </div>
 
   <!-- Layer panel -->
   <div id="lyrpanel">
     <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
+    <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
     <div class="lrow"><span>Fish Zones</span><button class="tog on" id="t-hot" onclick="tog('hot')"></button></div>
     <div class="lrow"><span>Buoy Markers</span><button class="tog on" id="t-buoys" onclick="tog('buoys')"></button></div>
     <div class="lrow"><span>Lat/Lon Grid</span><button class="tog on" id="t-grid" onclick="tog('grid')"></button></div>
@@ -519,12 +520,15 @@ function renderIsotherms(isotherms){
     const [r,g,b]=sstRGB(T);
     const color=`rgb(${r},${g},${b})`;
     // Thinner lines - minor every 1F, major every 2F
+    // Group segments into chains and filter vertical artifacts
     for(let i=0;i<segs.length;i+=4){
-      // Skip nearly-vertical segments (interpolation artifacts)
-      const dLon=Math.abs(segs[i]-segs[i+2]);
-      const dLat=Math.abs(segs[i+1]-segs[i+3]);
-      if(dLon<0.001 && dLat>0.05) continue; // pure vertical = artifact
-      const latlngs=[[segs[i+1],segs[i]],[segs[i+3],segs[i+2]]];
+      const lon1=segs[i],lat1=segs[i+1],lon2=segs[i+2],lat2=segs[i+3];
+      const dLon=Math.abs(lon1-lon2);
+      const dLat=Math.abs(lat1-lat2);
+      // Skip segments that are nearly perfectly vertical (lon barely changes)
+      // Real ocean fronts have significant E-W component
+      if(dLon < 0.003) continue; // skip near-vertical segments
+      const latlngs=[[lat1,lon1],[lat2,lon2]];
       L.polyline(latlngs,{
         color, weight:major?1.2:0.5,
         opacity:major?0.85:0.35
@@ -556,15 +560,15 @@ function renderIsotherms(isotherms){
 
 function renderTempBreaks(breaks){
   if(!breaks||!breaks.length) return;
+  // Render as a canvas overlay for performance
   const canvas=L.canvas({padding:0.1});
   const group=L.layerGroup();
-  // Show all breaks with intensity > 0.08, scale size by intensity
-  breaks.filter(b=>b.intensity>0.08).forEach(b=>{
-    const r=b.intensity>0.4?3.5:b.intensity>0.2?2.5:1.8;
-    const op=0.5+b.intensity*0.5;
+  // Sample — render as circle markers for the strongest breaks
+  const strong=breaks.filter(b=>b.intensity>0.5).slice(0,500);
+  strong.forEach(b=>{
     L.circleMarker([b.lat,b.lon],{
-      radius:r, color:'transparent', fillColor:'#ffee00',
-      fillOpacity:Math.min(0.95,op), weight:0, renderer:canvas,
+      radius:2, color:'#ffff44', fillColor:'#ffee00',
+      fillOpacity:0.6+b.intensity*0.3, weight:0, renderer:canvas,
     }).addTo(group);
   });
   group.addTo(map);
@@ -574,28 +578,32 @@ function renderTempBreaks(breaks){
 function renderChlStipple(chlGrid){
   if(!chlGrid) return;
   const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  const group=L.layerGroup();
   const canvas=L.canvas({padding:0.1});
+  const group=L.layerGroup();
+  // Use larger step for performance but vary dot size by concentration
   const step=3;
   for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
     const chl=chlGrid[iy*NX+ix];
-    if(!chl||chl<=0) continue;
+    if(!chl||chl<0.20) continue;
     const lat=GA1-iy/NY*(GA1-GA0);
     const lon=GL0+ix/NX*(GL1-GL0);
-    // Normalize chl to 0-1 range (0.1 to 3.0 mg/m3)
-    const norm=Math.min(1,Math.max(0,(chl-0.1)/2.9));
-    if(norm<0.05) continue;
-    // Color: dark blue=low, cyan=medium, bright green=high
-    let r,g,b;
-    if(norm<0.33){r=0;g=Math.round(norm*3*150);b=Math.round(100+norm*3*155);}
-    else if(norm<0.66){r=0;g=Math.round(150+(norm-0.33)*3*105);b=Math.round(255-(norm-0.33)*3*255);}
-    else{r=Math.round((norm-0.66)*3*100);g=255;b=0;}
-    const color=`rgb(${r},${g},${b})`;
-    const opacity=0.15+norm*0.45;
+    // Classify into 4 levels
+    let radius, opacity, color;
+    if(chl>=2.0){
+      radius=3.5; opacity=0.75; color='#00ff44'; // High - bright green
+    } else if(chl>=1.0){
+      radius=2.5; opacity=0.60; color='#44dd33'; // Medium-high
+    } else if(chl>=0.5){
+      radius=1.8; opacity=0.45; color='#88cc22'; // Medium
+      if(Math.random()>0.6) continue; // thin out
+    } else {
+      radius=1.2; opacity=0.30; color='#aabb44'; // Low
+      if(Math.random()>0.35) continue; // thin out more
+    }
     L.circleMarker([lat,lon],{
-      radius:4,color:'transparent',
-      fillColor:color,fillOpacity:opacity,
-      weight:0,renderer:canvas,
+      radius, color:'transparent',
+      fillColor:color, fillOpacity:opacity,
+      weight:0, renderer:canvas,
     }).addTo(group);
   }
   group.addTo(map);
@@ -988,7 +996,6 @@ function setDay(off){
   const ft=document.getElementById('ft-'+off);
   // Reload ocean data (SST stays same, only conditions change for forecast)
   const date=null; // Always use latest satellite data
-  loadConditions(); // Reload with new forecast day
   loadOceanData(date);
   loadConditions(); // Reload with forecast day
   if(AF) loadWaypoints(AF.id);
