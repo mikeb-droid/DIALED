@@ -974,9 +974,8 @@ function getForecastDate(offset){
 function setDay(off){
   forecastDay=off;
   for(let i=0;i<=4;i++){const t=document.getElementById('ft-'+i);if(t)t.classList.toggle('on',i===off);}
-  // Reload ocean data for this forecast day
-  const date=off>0?getForecastDate(off):null;
-  loadOceanData(date);
+  loadOceanData(null); // Always use latest satellite data
+  loadConditions();    // Reload with forecast day
   if(AF) loadWaypoints(AF.id);
 }
 function applyDate(){
