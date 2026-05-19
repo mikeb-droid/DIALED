@@ -988,6 +988,7 @@ function setDay(off){
   const ft=document.getElementById('ft-'+off);
   // Reload ocean data (SST stays same, only conditions change for forecast)
   const date=null; // Always use latest satellite data
+  loadConditions(); // Reload with new forecast day
   loadOceanData(date);
   loadConditions(); // Reload with forecast day
   if(AF) loadWaypoints(AF.id);
