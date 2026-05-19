@@ -557,15 +557,15 @@ function renderIsotherms(isotherms){
 
 function renderTempBreaks(breaks){
   if(!breaks||!breaks.length) return;
-  // Render as a canvas overlay for performance
   const canvas=L.canvas({padding:0.1});
   const group=L.layerGroup();
-  // Sample — render as circle markers for the strongest breaks
-  const strong=breaks.filter(b=>b.intensity>0.5).slice(0,500);
-  strong.forEach(b=>{
+  // Show all breaks with intensity > 0.08, scale size by intensity
+  breaks.filter(b=>b.intensity>0.08).forEach(b=>{
+    const r=b.intensity>0.4?3.5:b.intensity>0.2?2.5:1.8;
+    const op=0.5+b.intensity*0.5;
     L.circleMarker([b.lat,b.lon],{
-      radius:2, color:'#ffff44', fillColor:'#ffee00',
-      fillOpacity:0.6+b.intensity*0.3, weight:0, renderer:canvas,
+      radius:r, color:'transparent', fillColor:'#ffee00',
+      fillOpacity:Math.min(0.95,op), weight:0, renderer:canvas,
     }).addTo(group);
   });
   group.addTo(map);
