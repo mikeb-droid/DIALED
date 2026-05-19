@@ -262,10 +262,9 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
   <div id="bs-cont">
     <!-- Conditions -->
     <div id="condpanel">
-      <div id="gobox" class="gobox-loading">
-        <div id="go-title">—</div>
-        <div id="go-sub">Loading conditions...</div>
-        <div id="go-issues"></div>
+      <div id="forecast-summary" style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,.04);border-radius:8px">
+        <div id="go-sub" style="color:#aaa;font-size:12px">Loading conditions...</div>
+        <div id="go-issues" style="color:#ff8844;font-size:11px;margin-top:4px"></div>
       </div>
       <div id="buoys-list"></div>
       <div id="forecast-list"></div>
@@ -522,6 +521,10 @@ function renderIsotherms(isotherms){
     const color=`rgb(${r},${g},${b})`;
     // Thinner lines - minor every 1F, major every 2F
     for(let i=0;i<segs.length;i+=4){
+      // Skip nearly-vertical segments (interpolation artifacts)
+      const dLon=Math.abs(segs[i]-segs[i+2]);
+      const dLat=Math.abs(segs[i+1]-segs[i+3]);
+      if(dLon<0.001 && dLat>0.05) continue; // pure vertical = artifact
       const latlngs=[[segs[i+1],segs[i]],[segs[i+3],segs[i+2]]];
       L.polyline(latlngs,{
         color, weight:major?1.2:0.5,
@@ -701,17 +704,9 @@ function renderBuoyMarkers(buoys){
 // ── CONDITIONS RENDERING ──────────────────────────────────────────────
 function renderConditions(data){
   // Update header badge
+  // Update header badge (keep it small)
   const badge=document.getElementById('go-badge');
-  badge.textContent=data.status;
-  badge.className=`go-badge go-${data.status}`;
-
-  // Update go box
-  const gobox=document.getElementById('gobox');
-  gobox.className=`gobox-${data.status}`;
-  const colors={'GO':'#44ff88','CAUTION':'#ffcc00','NO-GO':'#ff4444'};
-  const color=colors[data.status]||'#aaa';
-  document.getElementById('go-title').textContent=data.status;
-  document.getElementById('go-title').style.color=color;
+  if(badge){badge.textContent=data.status;badge.className=`go-badge go-${data.status}`;}
   const dayLabel = data.forecastDay > 0 ? 
     ` (${['','Tomorrow','+2 Days','+3 Days','+4 Days'][data.forecastDay]} Forecast)` : '';
   document.getElementById('go-sub').textContent=
