@@ -10,7 +10,7 @@ module.exports=async function handler(req,res){
     if(day===0){
       try{buoys=await fetchAllBuoys();}catch(e){console.warn('Buoy fetch failed:',e.message);}
     }
-    const zoneIds=lat?selectZones(parseFloat(lat)):['AMZ632','AMZ652','AMZ672'];
+    const zoneIds=lat?selectZones(parseFloat(lat)):['AMZ570','AMZ555','AMZ552'];
     const forecasts=await Promise.allSettled(zoneIds.map(z=>fetchMarineForecast(z))).then(r=>r.filter(x=>x.status==='fulfilled'&&x.value).map(x=>x.value));
     
     // For forecast days, use the appropriate forecast period
@@ -38,7 +38,8 @@ module.exports=async function handler(req,res){
   }catch(err){return res.status(500).json({error:err.message});}
 }
 function selectZones(lat){
-  if(lat>=30.0)return['AMZ630','AMZ632'];if(lat>=28.5)return['AMZ632','AMZ650'];
-  if(lat>=27.0)return['AMZ650','AMZ652'];if(lat>=26.0)return['AMZ652','AMZ670'];
-  return['AMZ670','AMZ672'];
+  if(lat>=30.0)return['AMZ570','AMZ532'];
+  if(lat>=28.0)return['AMZ570','AMZ555'];
+  if(lat>=27.0)return['AMZ555','AMZ552'];
+  return['AMZ552','AMZ555'];
 }
