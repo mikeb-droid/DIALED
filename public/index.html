@@ -471,8 +471,8 @@ async function loadConditions(){
 
 async function loadWaypoints(fishId){
   if(!fishId) return;
-  const date = forecastDay > 0 ? getForecastDate(forecastDay) : null;
-  const url = date ? `/api/waypoints?fish=${fishId}&date=${date}` : `/api/waypoints?fish=${fishId}`;
+  // Always use today's waypoints - satellite data doesn't change daily
+  const url = `/api/waypoints?fish=${fishId}`;
   try {
     showToast(`Finding ${fishId} spots...`);
     const resp = await fetch(url);
