@@ -573,43 +573,26 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  if(!chlGrid) return;
-  const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  
-  // Use an SVG overlay for smooth color wash
-  const group=L.layerGroup();
-  const step=4; // sample every 4 cells for performance
-  
-  // Create rectangles for each cell colored by chlorophyll
-  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
-    const chl=chlGrid[iy*NX+ix];
-    if(!chl||chl<0.15) continue;
-    const lat1=GA1-iy/NY*(GA1-GA0);
-    const lat2=GA1-(iy+step)/NY*(GA1-GA0);
-    const lon1=GL0+ix/NX*(GL1-GL0);
-    const lon2=GL0+(ix+step)/NX*(GL1-GL0);
-    
-    // Color scale: low=teal, medium=green, high=bright lime
-    let color, opacity;
-    if(chl>=2.0){
-      color='#00ff88'; opacity=0.35;
-    } else if(chl>=1.0){
-      color='#22dd66'; opacity=0.28;
-    } else if(chl>=0.5){
-      color='#44cc44'; opacity=0.20;
-    } else if(chl>=0.3){
-      color='#66bb33'; opacity=0.14;
-    } else {
-      color='#88aa22'; opacity=0.09;
-    }
-    
-    L.rectangle([[lat1,lon1],[lat2,lon2]],{
-      color:'transparent', fillColor:color,
-      fillOpacity:opacity, weight:0,
-    }).addTo(group);
-  }
-  group.addTo(map);
-  overlayLayers.chl=group;
+  // Use NOAA WMS tile layer for real chlorophyll with color gradient
+  const d = new Date();
+  d.setDate(d.getDate()-7); // weekly composite lag
+  const timeStr = d.toISOString().slice(0,10)+'T12:00:00Z';
+  const wmsUrl = 'https://coastwatch.noaa.gov/erddap/wms/noaacwNPPVIIRSchlaWeekly/request';
+  const layer = L.tileLayer.wms(wmsUrl, {
+    layers: 'noaacwNPPVIIRSchlaWeekly:chlor_a',
+    format: 'image/png',
+    transparent: true,
+    version: '1.3.0',
+    time: timeStr,
+    opacity: 0.65,
+    styles: 'boxfill/alg',
+    colorscalerange: '0.01,10',
+    logscale: 'true',
+    belowmincolor: 'transparent',
+    attribution: 'NOAA CoastWatch',
+  });
+  layer.addTo(map);
+  overlayLayers.chl=layer;
 }
 
 function renderFishZone(fish, data){
