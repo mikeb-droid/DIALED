@@ -263,8 +263,12 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <!-- Conditions -->
     <div id="condpanel">
       <div id="forecast-summary" style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,.04);border-radius:8px">
-        <div id="go-sub" style="color:#aaa;font-size:12px">Loading conditions...</div>
-        <div id="go-issues" style="color:#ff8844;font-size:11px;margin-top:4px"></div>
+        <div id="go-sub" style="color:#ddd;font-size:13px;font-weight:600">Loading conditions...</div>
+        <div id="go-issues" style="color:#ffaa66;font-size:11px;margin-top:4px"></div>
+      </div>
+      <div id="bestbet-panel" style="margin:8px 0;display:none">
+        <div style="color:#e8c840;font-size:11px;font-weight:700;margin-bottom:6px;letter-spacing:.5px">🎯 BEST BETS</div>
+        <div id="bestbet-list"></div>
       </div>
       <div id="buoys-list"></div>
       <div id="forecast-list"></div>
@@ -731,6 +735,7 @@ function renderConditions(data){
     ).join('');
   }
 
+  renderBestBets(data);
   // Render buoy cards
   const buoyList=document.getElementById('buoys-list');
   buoyList.innerHTML=(data.buoys||[]).map(b=>`
@@ -948,6 +953,86 @@ function doGPS(){
 }
 
 // ── BOTTOM SHEET ──────────────────────────────────────────────────────
+
+function renderBestBets(condData){
+  const panel=document.getElementById('bestbet-panel');
+  const list=document.getElementById('bestbet-list');
+  if(!panel||!list) return;
+  const TARGET=['king','wahoo','sail','bft','mahi'];
+  const targetFish=FISH_CLIENT.filter(f=>TARGET.includes(f.id));
+  let condScore=1.0,condNote='';
+  if(condData.forecasts&&condData.forecasts.length>0){
+    const periods=(condData.forecasts[0].periods)||[];
+    if(periods.length>0){
+      const p=periods[0].parsed||{};
+      if((p.windMax>=25)||(p.seasMax>=6)){condScore=0.3;condNote='Rough seas';}
+      else if((p.windMax>=20)||(p.seasMax>=4)){condScore=0.6;condNote='Moderate seas';}
+      else if((p.windMax>=15)||(p.seasMax>=3)){condScore=0.8;condNote='Light chop';}
+      else if(p.windMax>0){condScore=0.95;condNote='Good conditions';}
+    }
+  }
+  if(condData.forecastDay===0&&condData.buoys&&condData.buoys.length>0){
+    const b=condData.buoys[0];
+    if(b.waves&&b.waves.height>=6)condScore=Math.min(condScore,0.3);
+    else if(b.waves&&b.waves.height>=4)condScore=Math.min(condScore,0.6);
+    if(b.wind&&b.wind.speed>=25)condScore=Math.min(condScore,0.3);
+    else if(b.wind&&b.wind.speed>=20)condScore=Math.min(condScore,0.6);
+  }
+  if(condScore<0.25){
+    panel.style.display='block';
+    list.innerHTML='<div style="color:#ff6644;font-size:12px;padding:6px 0">Too rough to fish offshore safely</div>';
+    return;
+  }
+  const bets=[];
+  targetFish.forEach(fish=>{
+    const waypts=AF&&AF.id===fish.id?currentWaypoints:null;
+    let fishScore=0.5,bestWpt=null;
+    if(waypts&&waypts.length>0){
+      bestWpt=waypts[0];
+      fishScore=bestWpt.score.total*condScore;
+    } else {
+      const buoySst=condData.buoys&&condData.buoys[0]?condData.buoys[0].sst:null;
+      if(buoySst){
+        const mid=(fish.sst[0]+fish.sst[1])/2,range=(fish.sst[1]-fish.sst[0])/2;
+        fishScore=Math.max(0,1-Math.abs(buoySst-mid)/range)*0.55*condScore;
+      }
+    }
+    if(fishScore>0.10)bets.push({fish,score:fishScore,bestWpt,condScore});
+  });
+  bets.sort((a,b)=>b.score-a.score);
+  if(bets.length===0){panel.style.display='none';return;}
+  panel.style.display='block';
+  const condColor=condScore>=0.9?'#44ff88':condScore>=0.7?'#ffcc00':'#ff8844';
+  if(!condNote)condNote=condData.forecastDay>0?['','Tomorrow','+2 Days','+3 Days','+4 Days'][condData.forecastDay]:'Today';
+  list.innerHTML=bets.map((bet,i)=>{
+    const pct=Math.round(bet.score*100);
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const loc=bet.bestWpt?`<div style="color:#777;font-size:9px">${coordStr(bet.bestWpt.lat,bet.bestWpt.lon)}</div>`:'';
+    return `<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a1a;cursor:pointer" onclick="selectFishAndShow('${bet.fish.id}')">
+      <span style="font-size:20px;margin-right:10px">${bet.fish.icon}</span>
+      <div style="flex:1">
+        <div style="color:#ddd;font-size:12px;font-weight:600">${medal} ${bet.fish.name}</div>
+        ${loc}
+      </div>
+      <div style="text-align:right">
+        <div style="color:${bet.fish.c};font-size:17px;font-weight:700">${pct}%</div>
+        <div style="color:${condColor};font-size:9px">${condNote}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function selectFishAndShow(fishId){
+  const fish=FISH_CLIENT.find(f=>f.id===fishId);
+  if(!fish)return;
+  FISH_CLIENT.forEach(f=>{const b=document.getElementById('fb-'+f.id);if(b)b.classList.remove('on');});
+  const btn=document.getElementById('fb-'+fishId);
+  if(btn)btn.classList.add('on');
+  AF=fish;closeWpt();
+  loadWaypoints(fish.id);
+  showTab('spots',null);
+  openSheet();
+}
+
 function toggleSheet(){
   sheetOpen=!sheetOpen;
   const bsc=document.getElementById('bs-cont');
