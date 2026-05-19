@@ -573,26 +573,34 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  // Use NOAA WMS tile layer for real chlorophyll with color gradient
-  const d = new Date();
-  d.setDate(d.getDate()-7); // weekly composite lag
-  const timeStr = d.toISOString().slice(0,10)+'T12:00:00Z';
-  const wmsUrl = 'https://coastwatch.noaa.gov/erddap/wms/noaacwNPPVIIRSchlaWeekly/request';
-  const layer = L.tileLayer.wms(wmsUrl, {
-    layers: 'noaacwNPPVIIRSchlaWeekly:chlor_a',
-    format: 'image/png',
-    transparent: true,
-    version: '1.3.0',
-    time: timeStr,
-    opacity: 0.65,
-    styles: 'boxfill/alg',
-    colorscalerange: '0.01,10',
-    logscale: 'true',
-    belowmincolor: 'transparent',
-    attribution: 'NOAA CoastWatch',
-  });
-  layer.addTo(map);
-  overlayLayers.chl=layer;
+  if(!chlGrid) return;
+  const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
+  const group=L.layerGroup();
+  const canvas=L.canvas({padding:0.1});
+  const step=3;
+  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
+    const chl=chlGrid[iy*NX+ix];
+    if(!chl||chl<=0) continue;
+    const lat=GA1-iy/NY*(GA1-GA0);
+    const lon=GL0+ix/NX*(GL1-GL0);
+    // Normalize chl to 0-1 range (0.1 to 3.0 mg/m3)
+    const norm=Math.min(1,Math.max(0,(chl-0.1)/2.9));
+    if(norm<0.05) continue;
+    // Color: dark blue=low, cyan=medium, bright green=high
+    let r,g,b;
+    if(norm<0.33){r=0;g=Math.round(norm*3*150);b=Math.round(100+norm*3*155);}
+    else if(norm<0.66){r=0;g=Math.round(150+(norm-0.33)*3*105);b=Math.round(255-(norm-0.33)*3*255);}
+    else{r=Math.round((norm-0.66)*3*100);g=255;b=0;}
+    const color=`rgb(${r},${g},${b})`;
+    const opacity=0.15+norm*0.45;
+    L.circleMarker([lat,lon],{
+      radius:4,color:'transparent',
+      fillColor:color,fillOpacity:opacity,
+      weight:0,renderer:canvas,
+    }).addTo(group);
+  }
+  group.addTo(map);
+  overlayLayers.chl=group;
 }
 
 function renderFishZone(fish, data){
