@@ -204,7 +204,6 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
-    <div class="lrow"><span>Depth Lines</span><button class="tog on" id="t-bat" onclick="tog('bat')"></button></div>
     <div class="lrow"><span>Fish Zones</span><button class="tog on" id="t-hot" onclick="tog('hot')"></button></div>
     <div class="lrow"><span>Buoy Markers</span><button class="tog on" id="t-buoys" onclick="tog('buoys')"></button></div>
     <div class="lrow"><span>Lat/Lon Grid</span><button class="tog on" id="t-grid" onclick="tog('grid')"></button></div>
@@ -462,7 +461,8 @@ async function loadConditions(){
   el.textContent='CHECKING...';
   el.className='go-badge go-loading';
   try {
-    const resp = await fetch('/api/conditions?boat=medium');
+    const dayParam = forecastDay > 0 ? `&day=${forecastDay}` : '';
+    const resp = await fetch(`/api/conditions?boat=medium${dayParam}`);
     if(!resp.ok) throw new Error(resp.status);
     conditionsData = await resp.json();
     renderConditions(conditionsData);
@@ -712,12 +712,26 @@ function renderConditions(data){
   const color=colors[data.status]||'#aaa';
   document.getElementById('go-title').textContent=data.status;
   document.getElementById('go-title').style.color=color;
+  const dayLabel = data.forecastDay > 0 ? 
+    ` (${['','Tomorrow','+2 Days','+3 Days','+4 Days'][data.forecastDay]} Forecast)` : '';
   document.getElementById('go-sub').textContent=
-    data.status==='GO'?'Conditions look fishable':
+    (data.status==='GO'?'Conditions look fishable':
     data.status==='CAUTION'?'Exercise caution':
-    'Stay in the dock';
+    'Stay in the dock') + dayLabel;
   document.getElementById('go-issues').innerHTML=
     (data.issues||[]).map(i=>`• ${i}`).join('<br>') || '';
+
+  // Render marine forecasts
+  const fcastEl = document.getElementById('forecast-list');
+  if(fcastEl && data.forecasts && data.forecasts.length > 0){
+    fcastEl.innerHTML = data.forecasts.map(f=>
+      (f.periods||[]).map(p=>`
+        <div style="margin:8px 0;padding:8px;background:rgba(255,255,255,.04);border-radius:6px">
+          <div style="color:#aaa;font-size:10px;font-weight:600;margin-bottom:4px">${f.zone} — ${p.name||''}</div>
+          <div style="color:#ccc;font-size:11px;line-height:1.5">${p.text||''}</div>
+        </div>`).join('')
+    ).join('');
+  }
 
   // Render buoy cards
   const buoyList=document.getElementById('buoys-list');
@@ -978,9 +992,14 @@ function getForecastDate(offset){
 function setDay(off){
   forecastDay=off;
   for(let i=0;i<=4;i++){const t=document.getElementById('ft-'+i);if(t)t.classList.toggle('on',i===off);}
-  // Reload ocean data for this forecast day
-  const date=off>0?getForecastDate(off):null;
+  // Update header date display
+  const d=new Date(); d.setDate(d.getDate()+off);
+  const label=off===0?'TODAY':'+'+off+' '+d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
+  const ft=document.getElementById('ft-'+off);
+  // Reload ocean data (SST stays same, only conditions change for forecast)
+  const date=null; // Always use latest satellite data
   loadOceanData(date);
+  loadConditions(); // Reload with forecast day
   if(AF) loadWaypoints(AF.id);
 }
 function applyDate(){

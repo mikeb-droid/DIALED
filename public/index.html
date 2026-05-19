@@ -37,15 +37,15 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 #map{width:100%;height:100%}
 
 /* FLOATING CONTROLS */
-#fab-tl{position:fixed;top:55px;left:8px;z-index:1000;display:flex;flex-direction:column;gap:5px}
-#fab-tr{position:fixed;top:55px;right:8px;z-index:1000;display:flex;flex-direction:column;gap:5px}
+#fab-tl{position:absolute;top:8px;left:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
+#fab-tr{position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:5px}
 .fab{width:36px;height:36px;border-radius:10px;border:1px solid #333;background:rgba(8,8,8,.9);color:#bbb;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;backdrop-filter:blur(3px)}
 .fab:active{transform:scale(.95)}
 .fab.on{background:rgba(20,40,10,.9);border-color:#3a5a1a;color:#e8c840}
 #zoom-lbl{text-align:center;font-size:8px;color:#333;font-family:monospace}
 
 /* LAYER PANEL */
-#lyrpanel{position:fixed;top:100px;left:8px;z-index:1000;background:rgba(8,8,8,.96);border:1px solid #2a2a2a;border-radius:10px;padding:8px 10px;display:none;min-width:148px}
+#lyrpanel{position:absolute;top:50px;left:8px;z-index:15;background:rgba(8,8,8,.96);border:1px solid #2a2a2a;border-radius:10px;padding:8px 10px;display:none;min-width:148px}
 #lyrpanel.show{display:block}
 .lrow{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #111;font-size:11px;color:#777;gap:8px}
 .lrow:last-child{border-bottom:none}
@@ -60,7 +60,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 #sst-labels{display:flex;justify-content:space-between;font-size:7px;color:#888;font-family:monospace;margin-top:2px;width:160px}
 
 /* COORDS */
-#coords{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(0,0,0,.88);border:1px solid #555;border-radius:6px;padding:4px 12px;font-size:12px;font-family:monospace;color:#e8c840;pointer-events:none;white-space:nowrap;font-weight:600;letter-spacing:.3px}
+#coords{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(0,0,0,.88);border:1px solid #444;border-radius:6px;padding:4px 12px;font-size:12px;font-family:monospace;color:#e8c840;pointer-events:none;white-space:nowrap;font-weight:600;letter-spacing:.3px}
 
 /* STATUS TOAST */
 #toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;background:rgba(0,0,0,.88);border:1px solid #333;border-radius:8px;padding:10px 18px;font-size:12px;color:#ccc;display:none;text-align:center}
@@ -196,7 +196,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 
   <!-- Layer FAB -->
   <div id="fab-tl">
-    <button class="fab on" onclick="toggleLyr(event)" style="background:rgba(0,0,0,0.85);border:1px solid #555;color:#fff;font-size:18px">⚙</button>
+    <button class="fab on" onclick="toggleLyr(event)">⚙</button>
   </div>
 
   <!-- Layer panel -->
@@ -204,6 +204,9 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
+    <div class="lrow"><span>Fish Zones</span><button class="tog on" id="t-hot" onclick="tog('hot')"></button></div>
+    <div class="lrow"><span>Buoy Markers</span><button class="tog on" id="t-buoys" onclick="tog('buoys')"></button></div>
+    <div class="lrow"><span>Lat/Lon Grid</span><button class="tog on" id="t-grid" onclick="tog('grid')"></button></div>
   </div>
 
   <!-- Zoom -->
@@ -458,7 +461,8 @@ async function loadConditions(){
   el.textContent='CHECKING...';
   el.className='go-badge go-loading';
   try {
-    const resp = await fetch('/api/conditions?boat=medium');
+    const dayParam = forecastDay > 0 ? `&day=${forecastDay}` : '';
+    const resp = await fetch(`/api/conditions?boat=medium${dayParam}`);
     if(!resp.ok) throw new Error(resp.status);
     conditionsData = await resp.json();
     renderConditions(conditionsData);
@@ -471,8 +475,8 @@ async function loadConditions(){
 
 async function loadWaypoints(fishId){
   if(!fishId) return;
-  // Always use today's waypoints - satellite data doesn't change daily
-  const url = `/api/waypoints?fish=${fishId}`;
+  const date = forecastDay > 0 ? getForecastDate(forecastDay) : null;
+  const url = date ? `/api/waypoints?fish=${fishId}&date=${date}` : `/api/waypoints?fish=${fishId}`;
   try {
     showToast(`Finding ${fishId} spots...`);
     const resp = await fetch(url);
@@ -708,12 +712,26 @@ function renderConditions(data){
   const color=colors[data.status]||'#aaa';
   document.getElementById('go-title').textContent=data.status;
   document.getElementById('go-title').style.color=color;
+  const dayLabel = data.forecastDay > 0 ? 
+    ` (${['','Tomorrow','+2 Days','+3 Days','+4 Days'][data.forecastDay]} Forecast)` : '';
   document.getElementById('go-sub').textContent=
-    data.status==='GO'?'Conditions look fishable':
+    (data.status==='GO'?'Conditions look fishable':
     data.status==='CAUTION'?'Exercise caution':
-    'Stay in the dock';
+    'Stay in the dock') + dayLabel;
   document.getElementById('go-issues').innerHTML=
     (data.issues||[]).map(i=>`• ${i}`).join('<br>') || '';
+
+  // Render marine forecasts
+  const fcastEl = document.getElementById('forecast-list');
+  if(fcastEl && data.forecasts && data.forecasts.length > 0){
+    fcastEl.innerHTML = data.forecasts.map(f=>
+      (f.periods||[]).map(p=>`
+        <div style="margin:8px 0;padding:8px;background:rgba(255,255,255,.04);border-radius:6px">
+          <div style="color:#aaa;font-size:10px;font-weight:600;margin-bottom:4px">${f.zone} — ${p.name||''}</div>
+          <div style="color:#ccc;font-size:11px;line-height:1.5">${p.text||''}</div>
+        </div>`).join('')
+    ).join('');
+  }
 
   // Render buoy cards
   const buoyList=document.getElementById('buoys-list');
@@ -974,8 +992,14 @@ function getForecastDate(offset){
 function setDay(off){
   forecastDay=off;
   for(let i=0;i<=4;i++){const t=document.getElementById('ft-'+i);if(t)t.classList.toggle('on',i===off);}
-  loadOceanData(null); // Always use latest satellite data
-  loadConditions();    // Reload with forecast day
+  // Update header date display
+  const d=new Date(); d.setDate(d.getDate()+off);
+  const label=off===0?'TODAY':'+'+off+' '+d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
+  const ft=document.getElementById('ft-'+off);
+  // Reload ocean data (SST stays same, only conditions change for forecast)
+  const date=null; // Always use latest satellite data
+  loadOceanData(date);
+  loadConditions(); // Reload with forecast day
   if(AF) loadWaypoints(AF.id);
 }
 function applyDate(){
