@@ -485,7 +485,34 @@ async function loadWaypoints(fishId){
     const resp = await fetch(url);
     if(!resp.ok) throw new Error(resp.status);
     const data = await resp.json();
-    currentWaypoints = data.waypoints || [];
+    currentWaypoints = (data.waypoints || []).map(w=>{
+      // Adjust score for forecast day
+      if(forecastDay > 0 && conditionsData){
+        // Lunar adjustment for future day
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + forecastDay);
+        const knownNew = new Date('2024-01-11');
+        const cycle = 29.53058867;
+        const phase = (((futureDate - knownNew)/864e5) % cycle + cycle) % cycle / cycle;
+        const lunarScore = (Math.cos(phase*2*Math.PI)+1)/2;
+        // Condition penalty from forecast
+        let condPenalty = 1.0;
+        if(conditionsData.forecasts && conditionsData.forecasts.length > 0){
+          const periods = (conditionsData.forecasts[0].periods||[]);
+          const periodIdx = Math.min(forecastDay*2-1, periods.length-1);
+          const p = periodIdx >= 0 ? (periods[periodIdx]?.parsed||{}) : {};
+          if(p.windMax >= 25 || p.seasMax >= 6) condPenalty = 0.5;
+          else if(p.windMax >= 20 || p.seasMax >= 4) condPenalty = 0.75;
+          else if(p.windMax >= 15 || p.seasMax >= 3) condPenalty = 0.9;
+        }
+        const adjTotal = Math.min(1, w.score.total * condPenalty * (0.85 + lunarScore * 0.15));
+        return {...w, score:{...w.score, total: +adjTotal.toFixed(2), forecastAdj: true}};
+      }
+      return w;
+    }).sort((a,b)=>b.score.total-a.score.total);
+    // Re-assign letters after re-sort
+    const letters='ABCDEFGH';
+    currentWaypoints = currentWaypoints.map((w,i)=>({...w,letter:letters[i]||w.letter}));
     buildSpotCards();
     renderWaypoints();
     showToast(`${currentWaypoints.length} spots found`);
