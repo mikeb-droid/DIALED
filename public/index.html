@@ -204,6 +204,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
+    <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
     <div class="lrow"><span>Fish Zones</span><button class="tog on" id="t-hot" onclick="tog('hot')"></button></div>
     <div class="lrow"><span>Buoy Markers</span><button class="tog on" id="t-buoys" onclick="tog('buoys')"></button></div>
     <div class="lrow"><span>Lat/Lon Grid</span><button class="tog on" id="t-grid" onclick="tog('grid')"></button></div>
@@ -607,38 +608,35 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  if(!chlGrid) return;
-  const NX=200, NY=180, GL0=-82.5, GL1=-76.5, GA0=23.5, GA1=31.8;
-  const canvas=L.canvas({padding:0.1});
-  const group=L.layerGroup();
-  // Use larger step for performance but vary dot size by concentration
-  const step=3;
-  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
-    const chl=chlGrid[iy*NX+ix];
-    if(!chl||chl<0.20) continue;
-    const lat=GA1-iy/NY*(GA1-GA0);
-    const lon=GL0+ix/NX*(GL1-GL0);
-    // Classify into 4 levels
-    let radius, opacity, color;
-    if(chl>=2.0){
-      radius=3.5; opacity=0.75; color='#00ff44'; // High - bright green
-    } else if(chl>=1.0){
-      radius=2.5; opacity=0.60; color='#44dd33'; // Medium-high
-    } else if(chl>=0.5){
-      radius=1.8; opacity=0.45; color='#88cc22'; // Medium
-      if(Math.random()>0.6) continue; // thin out
-    } else {
-      radius=1.2; opacity=0.30; color='#aabb44'; // Low
-      if(Math.random()>0.35) continue; // thin out more
-    }
-    L.circleMarker([lat,lon],{
-      radius, color:'transparent',
-      fillColor:color, fillOpacity:opacity,
-      weight:0, renderer:canvas,
-    }).addTo(group);
-  }
-  group.addTo(map);
-  overlayLayers.chl=group;
+  // Use Leaflet canvas overlay to re-colorize NOAA chlorophyll WMS tiles
+  // This fetches tiles from NOAA and recolors them green-scale
+  const d = new Date();
+  d.setDate(d.getDate()-8);
+  const timeStr = d.toISOString().slice(0,10)+'T12:00:00Z';
+  
+  // Create a custom pane for chlorophyll
+  if(!map.getPane('chlPane')) map.createPane('chlPane');
+  map.getPane('chlPane').style.zIndex = 350;
+  map.getPane('chlPane').style.opacity = 0.7;
+
+  const layer = L.tileLayer.wms('https://coastwatch.noaa.gov/erddap/wms/noaacwNPPVIIRSchlaWeekly/request', {
+    layers: 'noaacwNPPVIIRSchlaWeekly:chlor_a',
+    format: 'image/png',
+    transparent: true,
+    version: '1.3.0',
+    time: timeStr,
+    pane: 'chlPane',
+    opacity: 0.7,
+  });
+
+  // Add error handler - if WMS fails, show nothing
+  layer.on('tileerror', function(e){ console.log('Chl tile error'); });
+  layer.addTo(map);
+  overlayLayers.chl = layer;
+  
+  // Apply green hue-shift filter to the pane
+  const pane = map.getPane('chlPane');
+  if(pane) pane.style.filter = 'hue-rotate(90deg) saturate(2) brightness(1.2)';
 }
 
 function renderFishZone(fish, data){
