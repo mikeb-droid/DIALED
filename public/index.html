@@ -604,17 +604,18 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  // NASA GIBS chlorophyll - designed for browser tile access
-  // MODIS Aqua chlorophyll-a concentration
+  // NASA GIBS WMTS - MODIS Terra Chlorophyll A
+  // Monthly composite, browser-accessible tiles
   const d = new Date();
-  d.setDate(d.getDate()-5);
+  d.setDate(1); // first of current month
+  d.setMonth(d.getMonth()-1); // previous month for availability
   const dateStr = d.toISOString().slice(0,10);
   
   const layer = L.tileLayer(
-    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CHL_OCI_Monthly/default/'+dateStr+'/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
+    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Chlorophyll_A/default/'+dateStr+'/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
     {
-      opacity: 0.6,
-      attribution: 'NASA GIBS',
+      opacity: 0.65,
+      attribution: 'NASA GIBS MODIS',
       maxZoom: 7,
       errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
     }
