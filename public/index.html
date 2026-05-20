@@ -604,55 +604,30 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  // NOAA CoastWatch East Coast VIIRS chlorophyll PNG overlay
-  // Files use Julian day format: VRSUCW_YYYYDDD_DAILY_SNPP_CHLORA_FG_750M.png
-  // FG region: Florida-Georgia Coast ~24-32N, 84-76W
-  
-  function getJulianDay(date){
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    const oneDay = 1000*60*60*24;
-    return Math.floor(diff/oneDay);
+  if(!chlGrid) return;
+  const NX=200,NY=180,GL0=-82.5,GL1=-76.5,GA0=23.5,GA1=31.8;
+  const group=L.layerGroup();
+  const canvas=L.canvas({padding:0.1});
+  const step=3;
+  for(let iy=0;iy<NY;iy+=step) for(let ix=0;ix<NX;ix+=step){
+    const chl=chlGrid[iy*NX+ix];
+    if(!chl||chl<=0.15) continue;
+    const lat=GA1-iy/NY*(GA1-GA0);
+    const lon=GL0+ix/NX*(GL1-GL0);
+    const norm=Math.min(1,Math.max(0,(chl-0.15)/2.85));
+    let r,g,b;
+    if(norm<0.33){r=0;g=Math.round(80+norm*3*120);b=Math.round(150-norm*3*50);}
+    else if(norm<0.66){r=0;g=Math.round(200+(norm-0.33)*3*55);b=Math.round(100-(norm-0.33)*3*100);}
+    else{r=Math.round((norm-0.66)*3*80);g=255;b=0;}
+    const op=0.2+norm*0.5;
+    L.circleMarker([lat,lon],{
+      radius:4,color:'transparent',
+      fillColor:`rgb(${r},${g},${b})`,fillOpacity:op,
+      weight:0,renderer:canvas,
+    }).addTo(group);
   }
-  
-  // Try last few days to find available data
-  let loaded = false;
-  for(let daysBack = 1; daysBack <= 7; daysBack++){
-    const d = new Date();
-    d.setDate(d.getDate() - daysBack);
-    const year = d.getFullYear();
-    const jday = String(getJulianDay(d)).padStart(3,'0');
-    const url = 'https://eastcoast.coastwatch.noaa.gov/data/viirs/chl/daily/fg/VRSUCW_'+year+jday+'_DAILY_SNPP_CHLORA_FG_750M.png';
-    
-    // FG region bounds (Florida-Georgia Coast)
-    const bounds = [[24.0, -84.0], [32.0, -76.0]];
-    
-    const overlay = L.imageOverlay(url, bounds, {
-      opacity: 0.65,
-      errorOverlayUrl: '',
-      attribution: 'NOAA CoastWatch VIIRS Chl'
-    });
-    
-    // Test if image loads
-    const img = new Image();
-    img.onload = function(){
-      if(!loaded){
-        loaded = true;
-        overlay.addTo(map);
-        overlayLayers.chl = overlay;
-        console.log('Chl loaded: day', jday);
-      }
-    };
-    img.onerror = function(){ console.log('Chl not found: day', jday); };
-    img.src = url;
-    
-    if(!loaded && daysBack === 1){
-      // Add first attempt immediately, remove if fails
-      overlay.addTo(map);
-      overlayLayers.chl = overlay;
-    }
-    break; // try one at a time
-  }
+  group.addTo(map);
+  overlayLayers.chl=group;
 }
 
 function renderFishZone(fish, data){
