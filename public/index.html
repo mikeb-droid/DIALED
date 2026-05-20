@@ -604,24 +604,55 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  // NASA GIBS WMTS - MODIS Terra Chlorophyll A
-  // Monthly composite, browser-accessible tiles
-  const d = new Date();
-  d.setDate(1); // first of current month
-  d.setMonth(d.getMonth()-1); // previous month for availability
-  const dateStr = d.toISOString().slice(0,10);
+  // NOAA CoastWatch East Coast VIIRS chlorophyll PNG overlay
+  // Files use Julian day format: VRSUCW_YYYYDDD_DAILY_SNPP_CHLORA_FG_750M.png
+  // FG region: Florida-Georgia Coast ~24-32N, 84-76W
   
-  const layer = L.tileLayer(
-    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Chlorophyll_A/default/'+dateStr+'/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
-    {
+  function getJulianDay(date){
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date - start;
+    const oneDay = 1000*60*60*24;
+    return Math.floor(diff/oneDay);
+  }
+  
+  // Try last few days to find available data
+  let loaded = false;
+  for(let daysBack = 1; daysBack <= 7; daysBack++){
+    const d = new Date();
+    d.setDate(d.getDate() - daysBack);
+    const year = d.getFullYear();
+    const jday = String(getJulianDay(d)).padStart(3,'0');
+    const url = 'https://eastcoast.coastwatch.noaa.gov/data/viirs/chl/daily/fg/VRSUCW_'+year+jday+'_DAILY_SNPP_CHLORA_FG_750M.png';
+    
+    // FG region bounds (Florida-Georgia Coast)
+    const bounds = [[24.0, -84.0], [32.0, -76.0]];
+    
+    const overlay = L.imageOverlay(url, bounds, {
       opacity: 0.65,
-      attribution: 'NASA GIBS MODIS',
-      maxZoom: 7,
-      errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+      errorOverlayUrl: '',
+      attribution: 'NOAA CoastWatch VIIRS Chl'
+    });
+    
+    // Test if image loads
+    const img = new Image();
+    img.onload = function(){
+      if(!loaded){
+        loaded = true;
+        overlay.addTo(map);
+        overlayLayers.chl = overlay;
+        console.log('Chl loaded: day', jday);
+      }
+    };
+    img.onerror = function(){ console.log('Chl not found: day', jday); };
+    img.src = url;
+    
+    if(!loaded && daysBack === 1){
+      // Add first attempt immediately, remove if fails
+      overlay.addTo(map);
+      overlayLayers.chl = overlay;
     }
-  );
-  layer.addTo(map);
-  overlayLayers.chl = layer;
+    break; // try one at a time
+  }
 }
 
 function renderFishZone(fish, data){
