@@ -592,10 +592,10 @@ function renderTempBreaks(breaks){
   const canvas=L.canvas({padding:0.1});
   const group=L.layerGroup();
   // Sample — render as circle markers for the strongest breaks
-  const strong=breaks.filter(b=>b.intensity>0.5).slice(0,500);
+  const strong=breaks.filter(b=>b.intensity>0.08);
   strong.forEach(b=>{
     L.circleMarker([b.lat,b.lon],{
-      radius:2, color:'#ffff44', fillColor:'#ffee00',
+      radius:3, color:'transparent', fillColor:'#ffee00',
       fillOpacity:0.6+b.intensity*0.3, weight:0, renderer:canvas,
     }).addTo(group);
   });
