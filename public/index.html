@@ -604,85 +604,47 @@ function renderTempBreaks(breaks){
 }
 
 function renderChlStipple(chlGrid){
-  // Fetch NOAA CoastWatch VIIRS chlorophyll PNG and decode pixel values
-  // Files available at eastcoast.coastwatch.noaa.gov
-  function julianDay(d){
-    return Math.floor((d - new Date(d.getFullYear(),0,0)) / 86400000);
-  }
-  
-  // Try last 7 days
-  function tryDay(daysBack){
-    if(daysBack > 7) return;
-    const d = new Date();
-    d.setDate(d.getDate() - daysBack);
-    const yr = d.getFullYear();
-    const jd = String(julianDay(d)).padStart(3,'0');
-    const url = 'https://eastcoast.coastwatch.noaa.gov/data/viirs/chl/daily/se/VRSUCW_'+yr+jd+'_DAILY_SNPP_CHLORA_SE_750M.png';
-    
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function(){
-      // Decode the PNG to get chlorophyll values
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      
-      // SE region bounds: ~24N-36N, 82W-74W
-      const bounds = [[24.0, -82.0], [36.0, -74.0]];
-      const latMin=24, latMax=36, lonMin=-82, lonMax=-74;
-      
-      try {
-        const data = ctx.getImageData(0, 0, img.width, img.height).data;
-        const group = L.layerGroup();
-        const lcanvas = L.canvas({padding:0.1});
-        const step = 6; // sample every 6 pixels
-        
-        for(let py=0; py<img.height; py+=step){
-          for(let px=0; px<img.width; px+=step){
-            const i = (py*img.width+px)*4;
-            const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
-            if(a < 128) continue; // transparent = no data
-            if(r===0 && g===0 && b===0) continue; // black = land/no data
-            if(r > 200 && g > 200 && b > 200) continue; // white = clouds
-            
-            const lat = latMax - (py/img.height)*(latMax-latMin);
-            const lon = lonMin + (px/img.width)*(lonMax-lonMin);
-            
-            // Only render our area of interest
-            if(lat < 24 || lat > 32 || lon < -82 || lon > -76) continue;
-            
-            // Map green channel to opacity (higher green = more chl)
-            const greenness = (g - r - b*0.5) / 255;
-            if(greenness < 0.05) continue;
-            
-            const fillColor = `rgb(${r},${g},${b})`;
-            const opacity = 0.3 + Math.min(0.5, greenness);
-            
-            L.circleMarker([lat,lon],{
-              radius:3, color:'transparent',
-              fillColor, fillOpacity:opacity,
-              weight:0, renderer:lcanvas,
-            }).addTo(group);
-          }
-        }
+  // Fetch chlorophyll directly from NOAA in the browser
+  // Browser can access coastwatch.noaa.gov even though Vercel servers can't
+  async function fetchAndRender(){
+    const LAT0=24.0,LAT1=31.8,LON0=-82.5,LON1=-76.5;
+    for(let daysBack=2;daysBack<=30;daysBack+=3){
+      try{
+        const d=new Date();
+        d.setDate(d.getDate()-daysBack);
+        const time=d.toISOString().slice(0,10)+'T12:00:00Z';
+        const url='https://coastwatch.noaa.gov/erddap/griddap/noaacwNPPVIIRSSQchlaDaily.json?chlor_a[('+time+')][(0):1:(0)][('+LAT0+'):4:('+LAT1+')][('+LON0+'):4:('+LON1+')]';
+        const resp=await fetch(url,{signal:AbortSignal.timeout(15000)});
+        if(!resp.ok) continue;
+        const data=await resp.json();
+        const points=data.table.rows.filter(r=>r[4]!==null&&r[4]>0&&r[4]<100);
+        if(points.length<10) continue;
+        console.log('Browser chl:',points.length,'pts',time.slice(0,10));
+        // Render the points
+        const group=L.layerGroup();
+        const canvas=L.canvas({padding:0.1});
+        points.forEach(([t,a,lat,lon,chl])=>{
+          const norm=Math.min(1,Math.max(0,(chl-0.1)/2.9));
+          if(norm<0.05) return;
+          let r,g,b;
+          if(norm<0.33){r=0;g=Math.round(80+norm*3*120);b=Math.round(150-norm*3*50);}
+          else if(norm<0.66){r=0;g=Math.round(200+(norm-0.33)*3*55);b=Math.round(100-(norm-0.33)*3*100);}
+          else{r=Math.round((norm-0.66)*3*80);g=255;b=0;}
+          L.circleMarker([lat,lon],{
+            radius:4,color:'transparent',
+            fillColor:`rgb(${r},${g},${b})`,
+            fillOpacity:0.2+norm*0.5,
+            weight:0,renderer:canvas
+          }).addTo(group);
+        });
         group.addTo(map);
-        overlayLayers.chl = group;
-        console.log('Chl rendered from PNG day', jd);
-      } catch(e) {
-        // CORS error - fall back
-        console.log('Chl CORS error, trying image overlay');
-        const overlay = L.imageOverlay(url, bounds, {opacity:0.5});
-        overlay.addTo(map);
-        overlayLayers.chl = overlay;
-      }
-    };
-    img.onerror = function(){ tryDay(daysBack+1); };
-    img.src = url;
+        overlayLayers.chl=group;
+        return;
+      }catch(e){console.log('Browser chl err:',e.message);}
+    }
+    console.log('Browser chl: all dates failed');
   }
-  
-  tryDay(1);
+  fetchAndRender();
 }
 
 function renderFishZone(fish, data){
