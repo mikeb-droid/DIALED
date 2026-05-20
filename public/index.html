@@ -531,7 +531,7 @@ function renderOceanLayers(){
 
   if(LY.iso && oceanData.isotherms) renderIsotherms(oceanData.isotherms);
   if(LY.brk && oceanData.tempBreaks) renderTempBreaks(oceanData.tempBreaks);
-  if(LY.chl && oceanData.chlGrid) renderChlStipple(oceanData.chlGrid);
+  if(LY.chl) renderChlStipple(oceanData.chlGrid);
   if(LY.hot && AF) renderFishZone(AF, oceanData);
 }
 
