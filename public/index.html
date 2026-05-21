@@ -203,6 +203,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
   <div id="lyrpanel">
     <div class="lrow"><span>SST Isotherms</span><button class="tog on" id="t-iso" onclick="tog('iso')"></button></div>
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
+    <div class="lrow"><span>Radar</span><button class="tog" id="t-radar" onclick="tog('radar')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
   </div>
 
@@ -357,7 +358,7 @@ function ratingLabel(v){
 
 // ── State ─────────────────────────────────────────────────────────────
 let map=null, overlayLayers={}, waypointMarkers=[], buoyMarkers=[];
-let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1};
+let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1,radar:0};
 let AF=null, currentWaypoints=[], clickedWpt=null;
 let forecastDay=0;
 let oceanData=null, conditionsData=null;
@@ -959,6 +960,7 @@ function tog(id){
   LY[id]=!LY[id];
   document.getElementById('t-'+id).classList.toggle('on',LY[id]);
   if(['iso','brk','chl','hot'].includes(id)) renderOceanLayers();
+  if(id==='radar'){if(LY.radar)renderRadar();else if(overlayLayers.radar){map.removeLayer(overlayLayers.radar);overlayLayers.radar=null;}}
   if(id==='buoys'&&conditionsData) renderBuoyMarkers(LY.buoys?conditionsData.buoys:[]);
 }
 function toggleLyr(e){
@@ -1064,6 +1066,30 @@ function selectFishAndShow(fishId){
   loadWaypoints(fish.id);
   showTab('spots',null);
   openSheet();
+}
+
+
+function renderRadar(){
+  if(overlayLayers.radar) map.removeLayer(overlayLayers.radar);
+  // RainViewer - free weather radar, updates every 10 minutes
+  // Fetch latest timestamp first
+  fetch('https://api.rainviewer.com/public/weather-maps.json')
+    .then(r=>r.json())
+    .then(data=>{
+      const frames = data.radar.past;
+      if(!frames || frames.length === 0) return;
+      const latest = frames[frames.length-1];
+      const url = 'https://tilecache.rainviewer.com'+latest.path+'/256/{z}/{x}/{y}/2/1_1.png';
+      const layer = L.tileLayer(url, {
+        opacity: 0.6,
+        attribution: 'RainViewer',
+        zIndex: 500,
+      });
+      layer.addTo(map);
+      overlayLayers.radar = layer;
+      console.log('Radar loaded:', new Date(latest.time*1000).toLocaleTimeString());
+    })
+    .catch(e=>console.log('Radar error:', e.message));
 }
 
 function toggleSheet(){
