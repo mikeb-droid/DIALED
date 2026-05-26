@@ -1292,8 +1292,10 @@ function saveUwpt(){
   const name=document.getElementById('uwpt-name').value.trim();
   if(!name){ alert('Please enter a name'); return; }
   const lat=parseFloat(document.getElementById('uwpt-lat').value);
-  const lon=parseFloat(document.getElementById('uwpt-lon').value);
+  let lon=parseFloat(document.getElementById('uwpt-lon').value);
   if(isNaN(lat)||isNaN(lon)){ alert('Please enter valid lat/lon'); return; }
+  // Auto-negate longitude for Florida east coast (should be negative)
+  if(lon>0 && lon<100) lon=-lon;
   const note=document.getElementById('uwpt-note').value.trim();
   const pts=loadUwpts();
   if(uwptEditId){
