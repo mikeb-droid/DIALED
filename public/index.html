@@ -1225,9 +1225,9 @@ let rafPending=false;
 function sched(){if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;});}}
 
 // ---- USER WAYPOINTS ----
-let uwptLayer = L.layerGroup();
-let uwptPending = null;
-let uwptEditId = null;
+var uwptLayer = L.layerGroup();
+var uwptPending = null;
+var uwptEditId = null;
 
 function loadUwpts(){
   try{ return JSON.parse(localStorage.getItem('dialed_uwpts')||'[]'); }
