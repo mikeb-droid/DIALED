@@ -1254,10 +1254,12 @@ function renderUserWaypoints(){
 }
 
 function openUwptDialog(lat,lon){
-  uwptPending={lat,lon};
+  uwptPending=lat?{lat,lon}:null;
   uwptEditId=null;
-  document.getElementById('uwpt-title').textContent='📍 New Waypoint';
+  document.getElementById('uwpt-title').textContent='📍 Add Waypoint';
   document.getElementById('uwpt-name').value='';
+  document.getElementById('uwpt-lat').value=lat?lat.toFixed(5):'';
+  document.getElementById('uwpt-lon').value=lon?lon.toFixed(5):'';
   document.getElementById('uwpt-note').value='';
   document.getElementById('uwpt-delete').style.display='none';
   document.getElementById('uwpt-dialog').style.display='block';
@@ -1272,6 +1274,8 @@ function openUwptEdit(id){
   uwptEditId=id;
   document.getElementById('uwpt-title').textContent='✏️ Edit Waypoint';
   document.getElementById('uwpt-name').value=p.name;
+  document.getElementById('uwpt-lat').value=p.lat.toFixed(5);
+  document.getElementById('uwpt-lon').value=p.lon.toFixed(5);
   document.getElementById('uwpt-note').value=p.note||'';
   document.getElementById('uwpt-delete').style.display='block';
   document.getElementById('uwpt-dialog').style.display='block';
@@ -1281,13 +1285,16 @@ function openUwptEdit(id){
 function saveUwpt(){
   const name=document.getElementById('uwpt-name').value.trim();
   if(!name){ alert('Please enter a name'); return; }
+  const lat=parseFloat(document.getElementById('uwpt-lat').value);
+  const lon=parseFloat(document.getElementById('uwpt-lon').value);
+  if(isNaN(lat)||isNaN(lon)){ alert('Please enter valid lat/lon'); return; }
   const note=document.getElementById('uwpt-note').value.trim();
   const pts=loadUwpts();
   if(uwptEditId){
     const i=pts.findIndex(x=>x.id===uwptEditId);
-    if(i>=0){ pts[i].name=name; pts[i].note=note; }
-  } else if(uwptPending){
-    pts.push({id:Date.now(),lat:uwptPending.lat,lon:uwptPending.lon,name,note});
+    if(i>=0){ pts[i].name=name; pts[i].lat=lat; pts[i].lon=lon; pts[i].note=note; }
+  } else {
+    pts.push({id:Date.now(),lat,lon,name,note});
   }
   saveUwpts(pts);
   closeUwptDialog();
@@ -1322,8 +1329,12 @@ setTimeout(()=>{ if(LY.uwpt){ uwptLayer.addTo(map); renderUserWaypoints(); } },5
 
 </script>
 <div id="uwpt-dialog">
-  <h3 id="uwpt-title">📍 New Waypoint</h3>
+  <h3 id="uwpt-title">📍 Add Waypoint</h3>
   <input id="uwpt-name" placeholder="Name (e.g. 40 Fathom Ledge)" maxlength="40">
+  <div style="display:flex;gap:6px">
+    <input id="uwpt-lat" placeholder="Lat (e.g. 29.1234)" style="flex:1">
+    <input id="uwpt-lon" placeholder="Lon (e.g. -80.1234)" style="flex:1">
+  </div>
   <textarea id="uwpt-note" placeholder="Notes (optional)" rows="2" style="resize:none"></textarea>
   <div class="btn-row">
     <button id="uwpt-save" onclick="saveUwpt()">Save</button>
@@ -1331,5 +1342,6 @@ setTimeout(()=>{ if(LY.uwpt){ uwptLayer.addTo(map); renderUserWaypoints(); } },5
     <button id="uwpt-delete" onclick="deleteUwpt()">Delete</button>
   </div>
 </div>
+<button id="add-wpt-btn" onclick="openUwptDialog(null,null)" title="Add Waypoint" style="position:fixed;bottom:170px;right:12px;z-index:1000;background:#ffe040;color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5);font-weight:700">+</button>
 </body>
 </html>
