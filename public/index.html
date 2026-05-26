@@ -205,6 +205,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <div class="lrow"><span>Temp Breaks</span><button class="tog on" id="t-brk" onclick="tog('brk')"></button></div>
     <div class="lrow"><span>Radar</span><button class="tog" id="t-radar" onclick="tog('radar')"></button></div>
     <div class="lrow"><span>Weed Lines</span><button class="tog" id="t-weed" onclick="tog('weed')"></button></div>
+    <div class="lrow"><span>Reefs &amp; Wrecks</span><button class="tog" id="t-reef" onclick="tog('reef')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
   </div>
 
@@ -359,7 +360,7 @@ function ratingLabel(v){
 
 // ── State ─────────────────────────────────────────────────────────────
 let map=null, overlayLayers={}, waypointMarkers=[], buoyMarkers=[];
-let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1,radar:0,weed:0};
+let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1,radar:0,weed:0,reef:0};
 let AF=null, currentWaypoints=[], clickedWpt=null;
 let forecastDay=0;
 let oceanData=null, conditionsData=null;
@@ -963,6 +964,7 @@ function tog(id){
   if(['iso','brk','chl','hot'].includes(id)) renderOceanLayers();
   if(id==='radar'){if(LY.radar)renderRadar();else if(overlayLayers.radar){map.removeLayer(overlayLayers.radar);overlayLayers.radar=null;}}
   if(id==='weed'){if(LY.weed)renderWeedLines();else if(overlayLayers.weed){map.removeLayer(overlayLayers.weed);overlayLayers.weed=null;}}
+  if(id==='reef'){if(LY.reef)renderReefs();else if(overlayLayers.reef){map.removeLayer(overlayLayers.reef);overlayLayers.reef=null;}}
   if(id==='buoys'&&conditionsData) renderBuoyMarkers(LY.buoys?conditionsData.buoys:[]);
 }
 function toggleLyr(e){
@@ -1071,6 +1073,35 @@ function selectFishAndShow(fishId){
 }
 
 
+
+
+function renderReefs(){
+  if(overlayLayers.reef){map.removeLayer(overlayLayers.reef);overlayLayers.reef=null;}
+  const url='https://gis.myfwc.com/mapping/rest/services/Open_Data/Artificial_Reef_Locations_in_Florida/MapServer/12/query?where=Coast%3D%27Atlantic%27&outFields=Name,Lat_DD,Long_DD,Depth,County,MatCat&outSR=4326&f=geojson&resultRecordCount=2000';
+  fetch(url)
+    .then(r=>r.json())
+    .then(data=>{
+      const group=L.layerGroup();
+      const colors={Vessel:'#ff6b6b',Concrete:'#74b9ff',Metal:'#a29bfe',Module:'#55efc4',Rock:'#fdcb6e',Other:'#dfe6e9'};
+      data.features.forEach(f=>{
+        const p=f.properties;
+        const lat=p.Lat_DD, lon=p.Long_DD;
+        if(!lat||!lon) return;
+        const col=colors[p.MatCat]||'#dfe6e9';
+        const depth=p.Depth?p.Depth+'ft':'?ft';
+        L.circleMarker([lat,lon],{
+          radius:4,
+          color:'#000',weight:0.5,
+          fillColor:col,fillOpacity:0.85,
+        }).bindTooltip(`<b>${p.Name}</b><br>${p.County} Co. | ${depth}<br>${p.MatCat}`,{sticky:true})
+          .addTo(group);
+      });
+      group.addTo(map);
+      overlayLayers.reef=group;
+      console.log('Reefs loaded:',data.features.length);
+    })
+    .catch(e=>console.log('Reef error:',e.message));
+}
 
 function renderWeedLines(){
   if(overlayLayers.weed) map.removeLayer(overlayLayers.weed);
