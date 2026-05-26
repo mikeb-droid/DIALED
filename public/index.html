@@ -165,6 +165,14 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
 .lsub{font-size:9px;color:#444;margin-top:1px}
 .lbar{height:4px;background:#111;border-radius:2px;margin-top:5px}
 .lfill{height:4px;border-radius:2px}
+#uwpt-dialog{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a3a;border:1px solid #2a4a6a;border-radius:12px;padding:20px;z-index:9999;width:280px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+#uwpt-dialog h3{margin:0 0 12px;color:#ffe040;font-size:14px}
+#uwpt-dialog input,#uwpt-dialog textarea{width:100%;box-sizing:border-box;background:#0a1a2a;border:1px solid #2a4a6a;border-radius:6px;color:#fff;padding:8px;margin-bottom:8px;font-size:13px}
+#uwpt-dialog .btn-row{display:flex;gap:8px;margin-top:4px}
+#uwpt-dialog button{flex:1;padding:8px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600}
+#uwpt-save{background:#ffe040;color:#000}
+#uwpt-cancel{background:#2a4a6a;color:#fff}
+#uwpt-delete{background:#e74c3c;color:#fff;display:none}
 </style>
 </head>
 <body>
@@ -206,6 +214,7 @@ html,body{width:100%;height:100%;background:#0a0a0a;font-family:'Segoe UI',Arial
     <div class="lrow"><span>Radar</span><button class="tog" id="t-radar" onclick="tog('radar')"></button></div>
     <div class="lrow"><span>Weed Lines</span><button class="tog" id="t-weed" onclick="tog('weed')"></button></div>
     <div class="lrow"><span>Reefs &amp; Wrecks</span><button class="tog" id="t-reef" onclick="tog('reef')"></button></div>
+    <div class="lrow"><span>My Waypoints</span><button class="tog" id="t-uwpt" onclick="tog('uwpt')"></button></div>
     <div class="lrow"><span>Chlorophyll</span><button class="tog on" id="t-chl" onclick="tog('chl')"></button></div>
   </div>
 
@@ -360,7 +369,7 @@ function ratingLabel(v){
 
 // ── State ─────────────────────────────────────────────────────────────
 let map=null, overlayLayers={}, waypointMarkers=[], buoyMarkers=[];
-let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1,radar:0,weed:0,reef:0};
+let LY={iso:1,brk:1,chl:1,bat:1,hot:1,buoys:1,grid:1,radar:0,weed:0,reef:0,uwpt:1};
 let AF=null, currentWaypoints=[], clickedWpt=null;
 let forecastDay=0;
 let oceanData=null, conditionsData=null;
@@ -965,6 +974,7 @@ function tog(id){
   if(id==='radar'){if(LY.radar)renderRadar();else if(overlayLayers.radar){map.removeLayer(overlayLayers.radar);overlayLayers.radar=null;}}
   if(id==='weed'){if(LY.weed)renderWeedLines();else if(overlayLayers.weed){map.removeLayer(overlayLayers.weed);overlayLayers.weed=null;}}
   if(id==='reef'){if(LY.reef)renderReefs();else if(overlayLayers.reef){map.removeLayer(overlayLayers.reef);overlayLayers.reef=null;}}
+  if(id==='uwpt'){if(LY.uwpt){uwptLayer.addTo(map);renderUserWaypoints();}else{map.removeLayer(uwptLayer);}}
   if(id==='buoys'&&conditionsData) renderBuoyMarkers(LY.buoys?conditionsData.buoys:[]);
 }
 function toggleLyr(e){
@@ -1213,6 +1223,113 @@ function buildSSTBar(){
 
 let rafPending=false;
 function sched(){if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;});}}
+
+// ---- USER WAYPOINTS ----
+let uwptLayer = L.layerGroup();
+let uwptPending = null;
+let uwptEditId = null;
+
+function loadUwpts(){
+  try{ return JSON.parse(localStorage.getItem('dialed_uwpts')||'[]'); }
+  catch(e){ return []; }
+}
+function saveUwpts(arr){ localStorage.setItem('dialed_uwpts', JSON.stringify(arr)); }
+
+function renderUserWaypoints(){
+  uwptLayer.clearLayers();
+  if(!LY.uwpt) return;
+  const pts = loadUwpts();
+  pts.forEach(p=>{
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="background:#ffe040;border:2px solid #000;border-radius:50%;width:12px;height:12px;box-shadow:0 0 4px rgba(255,224,64,.8)"></div>`,
+      iconSize:[12,12], iconAnchor:[6,6]
+    });
+    const m = L.marker([p.lat,p.lon],{icon})
+      .bindTooltip(`<b>${p.name}</b>${p.note?'<br>'+p.note:''}<br><small>${toDDM(p.lat,true)} ${toDDM(p.lon,false)}</small>`,{sticky:true})
+      .addTo(uwptLayer);
+    m.on('click', ()=>openUwptEdit(p.id));
+  });
+  if(LY.uwpt && !map.hasLayer(uwptLayer)) uwptLayer.addTo(map);
+}
+
+function openUwptDialog(lat,lon){
+  uwptPending={lat,lon};
+  uwptEditId=null;
+  document.getElementById('uwpt-title').textContent='📍 New Waypoint';
+  document.getElementById('uwpt-name').value='';
+  document.getElementById('uwpt-note').value='';
+  document.getElementById('uwpt-delete').style.display='none';
+  document.getElementById('uwpt-dialog').style.display='block';
+  setTimeout(()=>document.getElementById('uwpt-name').focus(),100);
+}
+
+function openUwptEdit(id){
+  const pts=loadUwpts();
+  const p=pts.find(x=>x.id===id);
+  if(!p) return;
+  uwptPending=null;
+  uwptEditId=id;
+  document.getElementById('uwpt-title').textContent='✏️ Edit Waypoint';
+  document.getElementById('uwpt-name').value=p.name;
+  document.getElementById('uwpt-note').value=p.note||'';
+  document.getElementById('uwpt-delete').style.display='block';
+  document.getElementById('uwpt-dialog').style.display='block';
+  setTimeout(()=>document.getElementById('uwpt-name').focus(),100);
+}
+
+function saveUwpt(){
+  const name=document.getElementById('uwpt-name').value.trim();
+  if(!name){ alert('Please enter a name'); return; }
+  const note=document.getElementById('uwpt-note').value.trim();
+  const pts=loadUwpts();
+  if(uwptEditId){
+    const i=pts.findIndex(x=>x.id===uwptEditId);
+    if(i>=0){ pts[i].name=name; pts[i].note=note; }
+  } else if(uwptPending){
+    pts.push({id:Date.now(),lat:uwptPending.lat,lon:uwptPending.lon,name,note});
+  }
+  saveUwpts(pts);
+  closeUwptDialog();
+  renderUserWaypoints();
+}
+
+function deleteUwpt(){
+  if(!uwptEditId) return;
+  if(!confirm('Delete this waypoint?')) return;
+  const pts=loadUwpts().filter(x=>x.id!==uwptEditId);
+  saveUwpts(pts);
+  closeUwptDialog();
+  renderUserWaypoints();
+}
+
+function closeUwptDialog(){
+  document.getElementById('uwpt-dialog').style.display='none';
+  uwptPending=null; uwptEditId=null;
+}
+
+// Long press on map to add waypoint
+let pressTimer=null;
+map.on('mousedown touchstart', e=>{
+  if(e.originalEvent.target.closest('.leaflet-marker-icon,.leaflet-popup')) return;
+  const latlng = e.latlng;
+  pressTimer=setTimeout(()=>{ openUwptDialog(latlng.lat,latlng.lng); },600);
+});
+map.on('mouseup touchend mousemove', ()=>{ clearTimeout(pressTimer); pressTimer=null; });
+
+// Render on startup
+setTimeout(()=>{ if(LY.uwpt){ uwptLayer.addTo(map); renderUserWaypoints(); } },500);
+
 </script>
+<div id="uwpt-dialog">
+  <h3 id="uwpt-title">📍 New Waypoint</h3>
+  <input id="uwpt-name" placeholder="Name (e.g. 40 Fathom Ledge)" maxlength="40">
+  <textarea id="uwpt-note" placeholder="Notes (optional)" rows="2" style="resize:none"></textarea>
+  <div class="btn-row">
+    <button id="uwpt-save" onclick="saveUwpt()">Save</button>
+    <button id="uwpt-cancel" onclick="closeUwptDialog()">Cancel</button>
+    <button id="uwpt-delete" onclick="deleteUwpt()">Delete</button>
+  </div>
+</div>
 </body>
 </html>
