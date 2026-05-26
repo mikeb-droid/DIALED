@@ -1230,10 +1230,16 @@ var uwptPending = null;
 var uwptEditId = null;
 
 function loadUwpts(){
-  try{ return JSON.parse(localStorage.getItem('dialed_uwpts')||'[]'); }
-  catch(e){ return []; }
+  try{
+    const raw=localStorage.getItem('dialed_uwpts');
+    const pts=raw?JSON.parse(raw):[];
+    return Array.isArray(pts)?pts:[];
+  }catch(e){ return []; }
 }
-function saveUwpts(arr){ localStorage.setItem('dialed_uwpts', JSON.stringify(arr)); }
+function saveUwpts(arr){
+  try{ localStorage.setItem('dialed_uwpts', JSON.stringify(arr)); }
+  catch(e){ console.log('localStorage error:',e.message); }
+}
 
 function renderUserWaypoints(){
   uwptLayer.clearLayers();
