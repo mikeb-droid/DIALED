@@ -974,7 +974,7 @@ function tog(id){
   if(id==='radar'){if(LY.radar)renderRadar();else if(overlayLayers.radar){map.removeLayer(overlayLayers.radar);overlayLayers.radar=null;}}
   if(id==='weed'){if(LY.weed)renderWeedLines();else if(overlayLayers.weed){map.removeLayer(overlayLayers.weed);overlayLayers.weed=null;}}
   if(id==='reef'){if(LY.reef)renderReefs();else if(overlayLayers.reef){map.removeLayer(overlayLayers.reef);overlayLayers.reef=null;}}
-  if(id==='uwpt'){if(LY.uwpt){uwptLayer.addTo(map);renderUserWaypoints();}else{map.removeLayer(uwptLayer);}}
+  if(id==='uwpt'){renderUserWaypoints();}
   if(id==='buoys'&&conditionsData) renderBuoyMarkers(LY.buoys?conditionsData.buoys:[]);
 }
 function toggleLyr(e){
@@ -1225,7 +1225,7 @@ let rafPending=false;
 function sched(){if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;});}}
 
 // ---- USER WAYPOINTS ----
-var uwptLayer = L.layerGroup();
+var uwptLayer = null;
 var uwptPending = null;
 var uwptEditId = null;
 
@@ -1242,8 +1242,10 @@ function saveUwpts(arr){
 }
 
 function renderUserWaypoints(){
+  if(!uwptLayer) uwptLayer = L.layerGroup().addTo(map);
   uwptLayer.clearLayers();
-  if(!LY.uwpt) return;
+  if(!LY.uwpt){ map.removeLayer(uwptLayer); return; }
+  if(!map.hasLayer(uwptLayer)) uwptLayer.addTo(map);
   const pts = loadUwpts();
   pts.forEach(p=>{
     const icon = L.divIcon({
@@ -1333,7 +1335,7 @@ map.on('mousedown touchstart', e=>{
 map.on('mouseup touchend mousemove', ()=>{ clearTimeout(pressTimer); pressTimer=null; });
 
 // Render on startup
-setTimeout(()=>{ if(LY.uwpt){ uwptLayer.addTo(map); renderUserWaypoints(); } },500);
+setTimeout(()=>{ renderUserWaypoints(); },500);
 
 </script>
 <div id="uwpt-dialog">
